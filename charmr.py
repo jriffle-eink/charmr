@@ -1,4 +1,5 @@
 import charmr_module as cm
+from color_convert import *
 import os
 import sys
 import signal
@@ -48,12 +49,15 @@ class DEVICE: # Lower-level system monitoring
         self.sect = sect # Keeps track of where we are in the software. None (startingup), 'main', 'slideshow', 'pause', 'psettings'
         
 class WFM_DISPLAYS:
-    def __init__(self, init, text, fast, strd, best):
+    def __init__(self, init, text, fast, strd, best, DU, DUIN, DUOUT):
         self.init = init
         self.text = text
         self.fast = fast
         self.strd = strd
         self.best = best
+        self.DU = DU
+        self.DUIN = DUIN
+        self.DUOUT = DUOUT
         
 """
 Functions: AURORA(), BUTTONS(), CHANGE_SLIDE(), CHANGE_SLIDESHOW(), CHECK(), CLEAR(), COMMAND(), DISPLAY(), 
@@ -133,7 +137,6 @@ def F_main(): # MAIN MENU SCREEN
             
             elif TOUCH_ZONE([.0000*cm.wsize,.9375*cm.hsize], [.1493*cm.wsize,1.000*cm.hsize]): F_brightness()            
             elif TOUCH_ZONE([.1493*cm.wsize,.8854*cm.hsize], [.3125*cm.wsize,1.000*cm.hsize]): F_lighting()
-            elif TOUCH_ZONE([.6910*cm.wsize,.8854*cm.hsize], [.8507*cm.wsize,1.000*cm.hsize]): pass
             elif TOUCH_ZONE([.8507*cm.wsize,.8854*cm.hsize], [1.000*cm.wsize,1.000*cm.hsize]): F_msettings() 
                            
         elif select: # IF SELECT BUTTON WAS PRESSED
@@ -166,7 +169,6 @@ def F_msettings(): # MAIN MENU SETTINGS
             
             elif TOUCH_ZONE([.0000*cm.wsize,.9375*cm.hsize], [.1493*cm.wsize,1.000*cm.hsize]): F_brightness() # Brightness button           
             elif TOUCH_ZONE([.1493*cm.wsize,.8854*cm.hsize], [.3125*cm.wsize,1.000*cm.hsize]): F_lighting()   # Lighting button
-            elif TOUCH_ZONE([.6910*cm.wsize,.8854*cm.hsize], [.8507*cm.wsize,1.000*cm.hsize]): pass; #SKETCH("sketch")     # Sketch button 
             elif TOUCH_ZONE([.8507*cm.wsize,.8854*cm.hsize], [1.000*cm.wsize,1.000*cm.hsize]): F_main()  # Settings button
             elif TOUCH_ZONE([.7743*cm.wsize,.1781*cm.hsize], [.8590*cm.wsize,.2417*cm.hsize]): F_main()  # Exit button   
             else: F_main('msettings')
@@ -250,7 +252,7 @@ def F_pause(): # Pauses the slideshow, pops up settings, and flashes an options 
     if slideshow.wfm[N] == wfm_Disp.fast: 
         DISPLAY(wfm_Disp.fast, 'full')  
     if slideshow.wfm[N] == wfm_Disp.text:
-        DISPLAY(wfm_Disp.strd, 'part')
+        DISPLAY(wfm_Disp.strd, 'full')
     if slideshow.wfm[N] == wfm_Disp.strd: 
         DISPLAY(wfm_Disp.strd, 'full')
         
@@ -263,7 +265,7 @@ def F_pause(): # Pauses the slideshow, pops up settings, and flashes an options 
     if touch:  
         if   TOUCH_ZONE([.0000*cm.wsize,.9375*cm.hsize], [.1493*cm.wsize,1.000*cm.hsize]): F_brightness()        
         elif TOUCH_ZONE([.1493*cm.wsize,.8854*cm.hsize], [.3125*cm.wsize,1.000*cm.hsize]): F_lighting()
-        elif TOUCH_ZONE([.6910*cm.wsize,.8854*cm.hsize], [.8507*cm.wsize,1.000*cm.hsize]): SKETCH("sketch")
+        elif TOUCH_ZONE([.6910*cm.wsize,.8854*cm.hsize], [.8507*cm.wsize,1.000*cm.hsize]): F_highlighter()
         elif TOUCH_ZONE([.8507*cm.wsize,.8854*cm.hsize], [1.000*cm.wsize,1.000*cm.hsize]): F_psettings()
         else: F_slideshow(menu.sshw.check+1, N-1)
     if button:
@@ -314,7 +316,7 @@ def F_psettings(): # MAIN MENU SETTINGS
             
             elif TOUCH_ZONE([.0000*cm.wsize,.9375*cm.hsize], [.1493*cm.wsize,1.000*cm.hsize]): F_brightness() # Brightness button           
             elif TOUCH_ZONE([.1493*cm.wsize,.8854*cm.hsize], [.3125*cm.wsize,1.000*cm.hsize]): F_lighting()   # Lighting button
-            elif TOUCH_ZONE([.6910*cm.wsize,.8854*cm.hsize], [.8507*cm.wsize,1.000*cm.hsize]): pass#SKETCH("screen")     # Sketch button 
+            elif TOUCH_ZONE([.6910*cm.wsize,.8854*cm.hsize], [.8507*cm.wsize,1.000*cm.hsize]): pass # F_highlighter() 
             elif TOUCH_ZONE([.8507*cm.wsize,.8854*cm.hsize], [1.000*cm.wsize,1.000*cm.hsize]): F_pause()  # Settings button
             elif TOUCH_ZONE([.7743*cm.wsize,.1781*cm.hsize], [.8590*cm.wsize,.2417*cm.hsize]): F_pause()  # Exit button  
         
@@ -372,7 +374,7 @@ def F_brightness(): # BRIGHTNESS MENU
             elif TOUCH_ZONE([.0000*cm.wsize,.7677*cm.hsize], [.2778*cm.wsize,.8313*cm.hsize]): CHECK(menu.bght, 4, 'display', b_Check, b_Uncheck); AURORA(20)
             elif TOUCH_ZONE([.0000*cm.wsize,.8313*cm.hsize], [.2778*cm.wsize,.8948*cm.hsize]): CHECK(menu.bght, 5, 'display', b_Check, b_Uncheck); AURORA(0)
             elif TOUCH_ZONE([.1493*cm.wsize,.8854*cm.hsize], [.3125*cm.wsize,1.000*cm.hsize]): F_lighting()
-            elif TOUCH_ZONE([.6910*cm.wsize,.8854*cm.hsize], [.8507*cm.wsize,1.000*cm.hsize]): pass#SKETCH("screen") 
+            elif TOUCH_ZONE([.6910*cm.wsize,.8854*cm.hsize], [.8507*cm.wsize,1.000*cm.hsize]): pass # F_highlighter() 
             elif TOUCH_ZONE([.0000*cm.wsize,.9375*cm.hsize], [.1493*cm.wsize,1.000*cm.hsize]): 
                 if   origin == 'main': F_msettings()
                 elif origin == 'slideshow': F_psettings()
@@ -438,7 +440,7 @@ def F_dispflsh():
             elif TOUCH_ZONE([1000,1295], [1160,1450]): REPLACE_DATA('auto', auto_Opp, 'slideshow')  
             elif TOUCH_ZONE([.0000*cm.wsize,.9375*cm.hsize], [.1493*cm.wsize,1.000*cm.hsize]): F_brightness()           
             elif TOUCH_ZONE([.1493*cm.wsize,.8854*cm.hsize], [.3125*cm.wsize,1.000*cm.hsize]): F_lighting()
-            elif TOUCH_ZONE([.6910*cm.wsize,.8854*cm.hsize], [.8507*cm.wsize,1.000*cm.hsize]): pass # SKETCH("screen") 
+            elif TOUCH_ZONE([.6910*cm.wsize,.8854*cm.hsize], [.8507*cm.wsize,1.000*cm.hsize]): pass # F_highlighter() 
             elif TOUCH_ZONE([.6736*cm.wsize,.1771*cm.hsize], [.7708*cm.wsize,.2396*cm.hsize]): return 'back'  
             elif TOUCH_ZONE([.7743*cm.wsize,.1781*cm.hsize], [.8590*cm.wsize,.2417*cm.hsize]): return 'exit' # exit button 
             elif TOUCH_ZONE([.8507*cm.wsize,.8854*cm.hsize], [1.000*cm.wsize,1.000*cm.hsize]): return 'exit' # settings button
@@ -490,18 +492,32 @@ def F_gotoslide():
                 if len(slide) == 0: slide = ""
             elif TOUCH_ZONE([813,1360], [1000,1500]): # ENTER
                 if int(slide) >= len(slideshow.file):
-                    print(int(slide))
-                    print(len(slideshow.file))
                     slide = len(slideshow.file)
                 F_slideshow(menu.sshw.check + 1, int(slide) - 2); F_main()
             elif TOUCH_ZONE([760,1710],   [990,1920]): F_lighting()
-            elif TOUCH_ZONE([1000,1760], [1215,1920]): pass#SKETCH("screen") 
+            elif TOUCH_ZONE([1000,1760], [1215,1920]): pass # F_highlighter() 
             elif TOUCH_ZONE([970,340],    [1110,460]): return 'back'  
             elif TOUCH_ZONE([1110,340],   [1240,460]): return 'exit' 
             elif TOUCH_ZONE([1240,1760], [1440,1920]): return 'exit' #settings
             
             else: continue
-   
+
+def F_highlighter(): 
+    """
+    The highlighter only works if the image is loaded as 'fast'
+    This means any non-fast rendered images must be converted using color_convert()
+    """
+    global slideshow, N   
+    highlighter = "/mnt/mmc/images/charmr/1440x1920/highlighter.pgm"
+    LOAD(highlighter, 1)   
+    DISPLAY(2, 'full')
+    
+    converted = PP1_22_40C(slideshow.path + slideshow.file[N], 'strd', 'fast') # color_convert.PP1_22_40C() for this GAL3 .wbf       
+    # highlight_sketch.txt calls Jaya's ACeP sketch program. The background image is loaded as tmp_converted
+    # This means that the color_convert function must be run regardless of the current wfm
+    os.system("FULL_WFM_MODE=2 PART_WFM_MODE=1 /mnt/mmc/api/tools/acepsketch /mnt/mmc/application/sketch/highlight_sketch1.txt")
+    F_pause() # Go back to pause when finished
+
 #-----------------------------------------------------------------------------------------------
 #------ LIGHTING MENU --------------------------------------------------------------------------
 #-----------------------------------------------------------------------------------------------
@@ -541,7 +557,7 @@ def F_lighting():
             elif TOUCH_ZONE([760,1710],   [990,1920]): #lighting button
                 if   device.sect == 'main': F_main()
                 elif device.sect == 'psettings': F_pause()
-            elif TOUCH_ZONE([1000,1760], [1215,1920]): pass #SKETCH("screen") 
+            elif TOUCH_ZONE([1000,1760], [1215,1920]): pass # F_highlighter() 
             elif TOUCH_ZONE([1115,342],   [1237,464]): #exit
                 if   device.sect == 'main':  F_main()
                 elif device.sect == 'psettings': F_pause()
@@ -579,7 +595,7 @@ def F_rotation():
             elif TOUCH_ZONE([470,1200],   [670,1400]): CHECK(menu.rot, 2, None, r_Check, r_Uncheck); REPLACE_DATA('rot', 2, 'slideshow');
             elif TOUCH_ZONE([770,1200],   [970,1400]): CHECK(menu.rot, 3, None, r_Check, r_Uncheck); REPLACE_DATA('rot', 3, 'slideshow');
             elif TOUCH_ZONE([760,1710],   [990,1920]): F_lighting()
-            elif TOUCH_ZONE([1000,1760], [1215,1920]): pass#SKETCH("screen") 
+            elif TOUCH_ZONE([1000,1760], [1215,1920]): pass # F_highlighter() 
             elif TOUCH_ZONE([970,340],    [1110,460]): return 'back'  
             elif TOUCH_ZONE([1110,340],   [1240,460]): return 'exit' 
             elif TOUCH_ZONE([1240,1760], [1440,1920]): return 'exit' 
@@ -611,7 +627,7 @@ def F_wfm():
                 elif TOUCH_ZONE([720,1100],   [930,1300]): CHECK(menu.wfms, 6, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 6, 'slideshow');
                 elif TOUCH_ZONE([930,1100],  [1140,1300]): CHECK(menu.wfms, 7, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 7, 'slideshow');  
                 elif TOUCH_ZONE([760,1710],   [990,1920]): F_lighting()
-                elif TOUCH_ZONE([1000,1760], [1215,1920]): pass#SKETCH("screen") 
+                elif TOUCH_ZONE([1000,1760], [1215,1920]): pass # F_highlighter() 
                 elif TOUCH_ZONE([970,340],    [1110,460]): return 'back'  
                 elif TOUCH_ZONE([1110,340],   [1240,460]): return 'exit' 
                 elif TOUCH_ZONE([1240,1760], [1440,1920]): return 'exit' 
@@ -643,7 +659,7 @@ def F_wfm():
                 elif TOUCH_ZONE([720,500],     [970,650]): image = 'startup'
                 elif TOUCH_ZONE([970,500],    [1220,650]): image = 'check'  
                 elif TOUCH_ZONE([760,1710],   [990,1920]): F_lighting() 
-                elif TOUCH_ZONE([1000,1760], [1215,1920]): pass#SKETCH("screen")
+                elif TOUCH_ZONE([1000,1760], [1215,1920]): pass # F_highlighter() 
                 elif TOUCH_ZONE([970,340],    [1110,460]): return 'back'  
                 elif TOUCH_ZONE([1110,340],   [1240,460]): return 'exit' 
                 elif TOUCH_ZONE([1240,1760], [1440,1920]): return 'exit' # self
@@ -657,7 +673,6 @@ def APP_SELECTOR(arg):
     slideshow_number = 1
     app_List = [cm.app1, cm.app2, cm.app3, cm.app4, cm.app5]
     for i in range(arg):
-        print(i);print(arg); print(slideshow_number); print(app_List[i].form)
         if   app_List[i].form == 'slideshow': 
             if    i+1 == arg: F_slideshow(slideshow_number)
             else: slideshow_number += 1
@@ -1227,7 +1242,7 @@ def GET_SLIDE(arg):
     myFont = ImageFont.truetype(r"/mnt/mmc/images/charmr/TrueTypeFonts/Serif_DejaVu.ttf", 80)
     I1.text((10, 10), str(N + 1) + '/' + str(len(slideshow.file)), font=myFont, fill=0)
     img.save(directory + 'tmp_currentslide.pgm')
-    LOAD_AREA(directory + 'tmp_currentslide.pgm', 1, arg)
+    LOAD_AREA(directory + 'tmp_currentslide.pgm', 1, arg)       
     
 def LOAD(img, rot):
     global rotation_Current
@@ -1384,19 +1399,11 @@ def SKETCH(arg):
     no argument: Allows user to draw on the screen on the spot.
     """
     global slideshow, N
+    WAIT(100)
     if   arg == 'app':
-        subprocess.call("cd /mnt/mmc/application/sketch", shell = True)
-        subprocess.call("FULL_WFM_MODE=4 PART_WFM_MODE=1 /mnt/mmc/api/tools/acepsketch /mnt/mmc/application/sketch/" + cm.sketch_App + ".txt", shell = True)        
+        #subprocess.call("cd /mnt/mmc/application/sketch/", shell = True)
+        subprocess.call("FULL_WFM_MODE=4 PART_WFM_MODE=1 /mnt/mmc/api/tools/acepsketch /mnt/mmc/application/sketch/" + cm.draw_App + ".txt", shell = True)        
         F_main()
-    elif arg == 'sketch':
-        subprocess.call("cd /mnt/mmc/application/sketch", shell = True)
-        os.system("FULL_WFM_MODE=4 PART_WFM_MODE=1 /mnt/mmc/api/tools/acepsketch /mnt/mmc/application/sketch/colorpen_sketch_fast.txt")        
-        if N != None:
-            LOAD(str(slideshow.path) + str(slideshow.file[N]), slideshow.rot[N])
-            DISPLAY(slideshow.wfm[N], 'part')
-            LOAD(directory + 'pause.pgm', 1)
-        else: 
-            LOAD(cm.main.file, cm.main.rot)
 
 def SLIDE_TIMER():
     global slideshow, N           
@@ -1756,10 +1763,10 @@ proc = os.getpid()
 device = DEVICE(ctme, wifi, btth, batt, proc, sect)
 
 # wfm PP1 22-40C 
-wfm_Disp = WFM_DISPLAYS(0, 3, 4, 2, 5) # wfm display qualities translated to numbers
+wfm_Disp = WFM_DISPLAYS(0, 3, 4, 2, 5, 1, 6, 7) # wfm display qualities translated to numbers
 
 # wfm MCC 1466-16-B2 
-#wfm_Disp = WFM_DISPLAYS(2, 2, 2, 2, 2)
+#wfm_Disp = WFM_DISPLAYS(2, 2, 2, 2, 2, 2, 2, 2)
 
 # # Crash management. Disabled for now
 # watchdog_Time = time.time()
