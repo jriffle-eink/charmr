@@ -19,11 +19,11 @@ class MENU_CHECK: #Each page will an option for button layouts and the current s
         self.check = check
         
 class MENUS: # 
-    def __init__(self, main, mset, pset, lght, bght, disp, flsh, auto, wfmm, wfms, rot, sshw):
+    def __init__(self, main, mset, pset, temp, bght, disp, flsh, auto, wfmm, wfms, rot, sshw):
         self.main = main
         self.mset = mset
         self.pset = pset
-        self.lght = lght
+        self.temp = temp
         self.bght = bght
         self.disp = disp
         self.flsh = flsh
@@ -40,13 +40,14 @@ class SNAKE_ATTRIBUTES:
         self.nmbr = nmbr
         
 class DEVICE: # Lower-level system monitoring
-    def __init__(self, time, wifi, btth, batt, proc, sect):
+    def __init__(self, time, wifi, btth, batt, proc, sect, slide):
         self.time = time
         self.wifi = wifi
         self.btth = btth # bluetooth
         self.batt = batt
         self.proc = proc # process id  
         self.sect = sect # Keeps track of where we are in the software. None (startingup), 'main', 'slideshow', 'pause', 'psettings'
+        self.slide = slide # brightness/temperature scroll at bottom of screen. Either 'bght' or 'temp'
         
 class WFM_DISPLAYS:
     def __init__(self, init, text, fast, strd, best, DU, DUIN, DUOUT):
@@ -58,6 +59,16 @@ class WFM_DISPLAYS:
         self.DU = DU
         self.DUIN = DUIN
         self.DUOUT = DUOUT
+        
+TOUCH_DICT = {
+    'brightness_button': [[0,1716], [215,1920]],
+    'temperature_button': [[215,1716], [420,1920]],
+    'sketch_button': [[.6910*cm.wsize,.8854*cm.hsize], [.8507*cm.wsize,1.000*cm.hsize]],
+    'settings_button': [[.8507*cm.wsize,.8854*cm.hsize], [1.000*cm.wsize,1.000*cm.hsize]],
+    'exit_button': [[.7743*cm.wsize,.1781*cm.hsize], [.8590*cm.wsize,.2417*cm.hsize]],
+    'back_button': [[.6736*cm.wsize,.1771*cm.hsize], [.7708*cm.wsize,.2396*cm.hsize]],
+    'slider': [[460,1730], [990,1850]]
+    }
         
 """
 Functions: AURORA(), BUTTONS(), CHANGE_SLIDE(), CHANGE_SLIDESHOW(), CHECK(), CLEAR(), COMMAND(), DISPLAY(), 
@@ -98,24 +109,27 @@ Version features:
     
 def F_main(): # MAIN MENU SCREEN
     CHANGE_SLIDE(0) # Slide resets to zero when sent back to main menu
-    
-    if device.sect == None: # If coming from startup, clear with 'best'
-        CLEAR('best')    
-    else: CLEAR("text")
+       
+    CLEAR('best')
     device.sect = 'main' # Section now set to the main menu 
     
-    LOAD(directory + "tmp_mainmenu.pgm", 1)  
+    LOAD(directory + "tmp_mainmenu.pgm")  
     CLOCK("load")
-    BUTTONS(main, 'no display')      
-    LOAD_AREA(cm.banner.file, cm.banner.rot, (0,80))
+    BUTTONS(main, 'no display')    
+    
+    LOAD_AREA(directory + 'label_brightness.pgm', (616,1718))   
+    BUTTONS(bght, 'no display', directory + "check_brightness2.pgm", directory + "uncheck_brightness2.pgm")
+    device.slide = 'bght'    
+    
+    LOAD_AREA(cm.banner, (0,80))
     
     if os.path.exists("tmp.txt"): 
         os.remove("tmp.txt")
     with open("tmp.txt", "w") as f: # Need cmder code to get all the main menu regions to display at once
         f.write("SET_ROT 90 \n")
-        f.write("UPD_PART_AREA " + str(wfm_Disp.text))
+        f.write("UPD_PART_AREA " + str(wfm_Disp.text)) 
         f.write(" 0 " + str(int(math.floor(.00000*cm.hsize))) + " " + str(cm.wsize) + " " + str(int(math.floor(.04115*cm.hsize))) + "\n") # HEADER
-        f.write("UPD_PART_AREA " + str(wfm_Disp.text))
+        f.write("UPD_PART_AREA " + str(wfm_Disp.text)) 
         f.write(" 0 " + str(int(math.floor(.15625*cm.hsize))) + " " + str(cm.wsize) + " " + str(int(math.floor(.73750*cm.hsize))) + "\n") # BODY
         f.write("UPD_PART_AREA " + str(wfm_Disp.strd))
         f.write(" 0 " + str(int(math.floor(.89375*cm.hsize))) + " " + str(cm.wsize) + " " + str(int(math.floor(.10625*cm.hsize))) + "\n") # FOOTER
@@ -129,34 +143,35 @@ def F_main(): # MAIN MENU SCREEN
         
         if touch: # IF SCREEN WAS TOUCHED
             command = MENU_TOUCH(main)
-            if   command == 0: APP_SELECTOR(1)
-            elif command == 1: APP_SELECTOR(2)
-            elif command == 2: APP_SELECTOR(3)
-            elif command == 3: APP_SELECTOR(4)     
-            elif command == 4: CLEAR("best"); F_snake()   
+            if   command == 1: APP_SELECTOR(1)
+            elif command == 2: APP_SELECTOR(2)
+            elif command == 3: APP_SELECTOR(3)
+            elif command == 4: APP_SELECTOR(4)               
+            elif command == 5: APP_SELECTOR(5)     
             
-            elif TOUCH_ZONE([.0000*cm.wsize,.9375*cm.hsize], [.1493*cm.wsize,1.000*cm.hsize]): F_brightness()            
-            elif TOUCH_ZONE([.1493*cm.wsize,.8854*cm.hsize], [.3125*cm.wsize,1.000*cm.hsize]): F_lighting()
-            elif TOUCH_ZONE([.8507*cm.wsize,.8854*cm.hsize], [1.000*cm.wsize,1.000*cm.hsize]): F_msettings() 
+            elif TOUCH_ZONE(TOUCH_DICT['slider']): 
+                if   device.slide == 'bght': F_brightness()
+                elif device.slide == 'temp': F_temperature()
+            elif TOUCH_ZONE(TOUCH_DICT['brightness_button']): BUTTON_BRIGHTNESS()
+            elif TOUCH_ZONE(TOUCH_DICT['temperature_button']): BUTTON_TEMPERATURE()          
+            elif TOUCH_ZONE(TOUCH_DICT['settings_button']): F_msettings() 
                            
         elif select: # IF SELECT BUTTON WAS PRESSED
-            if   main.check == 0: APP_SELECTOR(1)    #  START SLIDESHOW APP 1
-            elif main.check == 1: APP_SELECTOR(2)   
-            elif main.check == 1: APP_SELECTOR(3)   
-            elif main.check == 3: APP_SELECTOR(4)    # START ACEP SKETCH
-            elif main.check == 4: CLEAR("best"); F_snake()      
+            if   main.check == 1: APP_SELECTOR(1)
+            elif main.check == 2: APP_SELECTOR(2)
+            elif main.check == 3: APP_SELECTOR(3)   
+            elif main.check == 4: APP_SELECTOR(4)    
+            elif main.check == 5: APP_SELECTOR(5)
         
 def F_msettings(): # MAIN MENU SETTINGS
-    
     # ----- LOADING CONTENT ------------
-    LOAD(directory + "tmp_msettings.pgm", 1)  
+    LOAD(directory + "tmp_msettings.pgm")  
     WINDOW_HEADER('Main settings')
-    DISPLAY(wfm_Disp.text, 'part')
     
     # ----- WAITING FOR INPUT ----------
     while True:  
         # ----- DISPLAYING BUTTONS AND OTHER CONTENT IF NOT YET LOADED
-        BUTTONS(mset, 'display')  
+        BUTTONS(mset, 'display') 
         GET_INPUT()
     
         if touch:# Touch takes priority over button, so listed before 'if select:'   
@@ -167,11 +182,14 @@ def F_msettings(): # MAIN MENU SETTINGS
             elif command == 3: RESTART() 
             elif command == 4: TERMINATE()
             
-            elif TOUCH_ZONE([.0000*cm.wsize,.9375*cm.hsize], [.1493*cm.wsize,1.000*cm.hsize]): F_brightness() # Brightness button           
-            elif TOUCH_ZONE([.1493*cm.wsize,.8854*cm.hsize], [.3125*cm.wsize,1.000*cm.hsize]): F_lighting()   # Lighting button
-            elif TOUCH_ZONE([.8507*cm.wsize,.8854*cm.hsize], [1.000*cm.wsize,1.000*cm.hsize]): F_main()  # Settings button
-            elif TOUCH_ZONE([.7743*cm.wsize,.1781*cm.hsize], [.8590*cm.wsize,.2417*cm.hsize]): F_main()  # Exit button   
-            else: F_main('msettings')
+            elif TOUCH_ZONE(TOUCH_DICT['slider']): # BRIGHTNESS/TEMP SLIDER
+                if   device.slide == 'bght': F_brightness()
+                elif device.slide == 'temp': F_temperature()
+            elif TOUCH_ZONE(TOUCH_DICT['brightness_button']): BUTTON_BRIGHTNESS()
+            elif TOUCH_ZONE(TOUCH_DICT['temperature_button']): BUTTON_TEMPERATURE()      
+            elif TOUCH_ZONE(TOUCH_DICT['settings_button']): F_main()
+            elif TOUCH_ZONE(TOUCH_DICT['exit_button']): F_main()
+            else: F_main()
             
         elif select:
             if   mset.check == 0: command = F_gotoslide()
@@ -237,16 +255,26 @@ def F_pause(): # Pauses the slideshow, pops up settings, and flashes an options 
     # ----- LOADING CONTENT ------------
     # If exit button pressed on the pause menu screen:
     if device.sect == 'psettings': # coming back from psettings menu
-        LOAD(slideshow.path + slideshow.file[N], slideshow.rot[N]) # Reload the slideshow
-        DISPLAY(slideshow.wfm[N], 'part') #Redisplay the background slideshow     
+        LOAD(slideshow) # Reload the slideshow slide #N
+        DISPLAY(slideshow, 'part') #Redisplay the background slideshow     
     device.sect = 'pause'
     
-    LOAD(directory + "pause.pgm", 1)
+    if slideshow.wfm[N] == 3:
+        LOAD(directory + "pause_highlight2.pgm")
+    else: 
+        LOAD(directory + "pause_draw2.pgm")
     CLOCK("load")
     tmp = TEXT_TO_IMAGE(str(N + 1) + '/' + str(len(slideshow.file)), 'Serif_DejaVu.ttf', 50, directory + "blank_slidenumber_pause.pgm")   
-    LOAD_AREA(tmp, 1, (3,0))
+    LOAD_AREA(tmp, (3,0))
+
+    if   device.slide == 'bght':
+        LOAD_AREA(directory + 'label_brightness.pgm', (616,1718))   
+        BUTTONS(bght, 'no display', directory + "check_brightness2.pgm", directory + "uncheck_brightness2.pgm") 
+    elif device.slide == 'temp':
+        LOAD_AREA(directory + 'label_temperature.pgm', (616,1718))   
+        BUTTONS(temp, 'no display', directory + "check_brightness2.pgm", directory + "uncheck_brightness2.pgm") 
     
-    # ----- DISPLAYING CONTENT ------------
+    # ----- DISPLAYING PAUSE CONTENT ------------
     if slideshow.wfm[N] == wfm_Disp.best: 
         DISPLAY(wfm_Disp.best, 'full') 
     if slideshow.wfm[N] == wfm_Disp.fast: 
@@ -261,24 +289,27 @@ def F_pause(): # Pauses the slideshow, pops up settings, and flashes an options 
     img.save(tmp)       
         
     # ----- WAITING FOR INPUT ----------
-    GET_INPUT()
-    if touch:  
-        if   TOUCH_ZONE([.0000*cm.wsize,.9375*cm.hsize], [.1493*cm.wsize,1.000*cm.hsize]): F_brightness()        
-        elif TOUCH_ZONE([.1493*cm.wsize,.8854*cm.hsize], [.3125*cm.wsize,1.000*cm.hsize]): F_lighting()
-        elif TOUCH_ZONE([.6910*cm.wsize,.8854*cm.hsize], [.8507*cm.wsize,1.000*cm.hsize]): F_highlighter()
-        elif TOUCH_ZONE([.8507*cm.wsize,.8854*cm.hsize], [1.000*cm.wsize,1.000*cm.hsize]): F_psettings()
-        else: F_slideshow(menu.sshw.check+1, N-1)
-    if button:
-        if button == 'enter': return
-        if button == 'up':    CHANGE_SLIDE("back", slideshow.styl)
-        if button == 'down':  CHANGE_SLIDE("next", slideshow.styl)
+    while True:
+        GET_INPUT()
+        if touch:  
+            if   TOUCH_ZONE(TOUCH_DICT['slider']): 
+                if   device.slide == 'bght': F_brightness()
+                elif device.slide == 'temp': F_temperature()
+            elif TOUCH_ZONE(TOUCH_DICT['brightness_button']): BUTTON_BRIGHTNESS()
+            elif TOUCH_ZONE(TOUCH_DICT['temperature_button']): BUTTON_TEMPERATURE()   
+            elif TOUCH_ZONE(TOUCH_DICT['sketch_button']): F_sketch()
+            elif TOUCH_ZONE(TOUCH_DICT['settings_button']): F_psettings()
+            else: F_slideshow(menu.sshw.check+1, N-1)
+        if button:
+            if button == 'enter': break
+            if button == 'up':    CHANGE_SLIDE("back", slideshow.styl); break
+            if button == 'down':  CHANGE_SLIDE("next", slideshow.styl); break
         
 #-----------------------------------------------------------------------------------------------
 #------ SLIDESHOW SETTINGS MENU ----------------------------------------------------------------
 #----------------------------------------------------------------------------------------------- 
  
 def F_psettings(): # MAIN MENU SETTINGS
-
     # ----- STAY IN MENU UNTIL SPECIFIED -----------
     while True: # Touch and button management for menu screen settings   
     
@@ -286,21 +317,19 @@ def F_psettings(): # MAIN MENU SETTINGS
         # Can come from 'pause' or 'psettings'
         if device.sect == 'pause': # Flash the menu area white so text wfm# can be used in menu
             if slideshow.wfm[N] == wfm_Disp.best:
-                LOAD(directory + "menu_reg.pgm", 1) 
+                LOAD(directory + "menu_reg.pgm") 
                 DISPLAY(wfm_Disp.best, 'full') 
             if slideshow.wfm[N] == wfm_Disp.fast: 
-                LOAD(directory + "menu_reg.pgm", 1)
+                LOAD(directory + "menu_reg.pgm")
                 DISPLAY(wfm_Disp.fast, 'full')  
             if slideshow.wfm[N] == wfm_Disp.strd: 
-                LOAD(directory + "menu_reg.pgm", 1)
+                LOAD(directory + "menu_reg.pgm")
                 DISPLAY(wfm_Disp.strd, 'full')
                 
         device.sect = 'psettings' # set new device section
-        LOAD(directory + "tmp_psettings.pgm", 1)   
-        WINDOW_HEADER('Slideshow settings')  
-        BUTTONS(pset, 'no display')
-   
-        DISPLAY(wfm_Disp.text, 'part')
+        LOAD(directory + "tmp_psettings.pgm")   
+        WINDOW_HEADER('Slideshow settings')
+        BUTTONS(pset, 'display')
             
         # ----- WAITING FOR INPUT ----------
         GET_INPUT()  
@@ -314,11 +343,14 @@ def F_psettings(): # MAIN MENU SETTINGS
             elif command == 4: command = F_main()
             # ----- other touch zones to be specified
             
-            elif TOUCH_ZONE([.0000*cm.wsize,.9375*cm.hsize], [.1493*cm.wsize,1.000*cm.hsize]): F_brightness() # Brightness button           
-            elif TOUCH_ZONE([.1493*cm.wsize,.8854*cm.hsize], [.3125*cm.wsize,1.000*cm.hsize]): F_lighting()   # Lighting button
-            elif TOUCH_ZONE([.6910*cm.wsize,.8854*cm.hsize], [.8507*cm.wsize,1.000*cm.hsize]): pass # F_highlighter() 
-            elif TOUCH_ZONE([.8507*cm.wsize,.8854*cm.hsize], [1.000*cm.wsize,1.000*cm.hsize]): F_pause()  # Settings button
-            elif TOUCH_ZONE([.7743*cm.wsize,.1781*cm.hsize], [.8590*cm.wsize,.2417*cm.hsize]): F_pause()  # Exit button  
+            elif TOUCH_ZONE(TOUCH_DICT['slider']): 
+                if   device.slide == 'bght': F_brightness()
+                elif device.slide == 'temp': F_temperature()
+            elif TOUCH_ZONE(TOUCH_DICT['brightness_button']): BUTTON_BRIGHTNESS()
+            elif TOUCH_ZONE(TOUCH_DICT['temperature_button']): BUTTON_TEMPERATURE() 
+            elif TOUCH_ZONE(TOUCH_DICT['sketch_button']): F_sketch()
+            elif TOUCH_ZONE(TOUCH_DICT['settings_button']): F_pause()  # Settings button
+            elif TOUCH_ZONE(TOUCH_DICT['exit_button']): F_pause()  # Exit button  
         
         elif select: # if the select button was pressed, looks for the current check location and proceeds with command
             if   pset.check == 0: command = F_gotoslide()
@@ -337,70 +369,34 @@ def F_psettings(): # MAIN MENU SETTINGS
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 #-----------------------------------------------------------------------------------------------
-#------ BRIGHTNESS MENU -----------------------------------------------------------------------
+#------ BRIGHTNESS SCROLL ----------------------------------------------------------------------
 #----------------------------------------------------------------------------------------------- 
     
-def F_brightness(): # BRIGHTNESS MENU
-
+def F_brightness(): 
     # ----- LOADING CONTENT ------------
-    b_Check = directory + "check_brightness.pgm"; b_Uncheck = directory + "uncheck_brightness.pgm"
-    LOAD(directory + "menu_brightness.pgm", 1)
-    CLOCK('set')
-    if origin == 'slideshow':
-        tmp = TEXT_TO_IMAGE(str(N + 1) + '/' + str(len(slideshow.file)), 'Serif_DejaVu.ttf', 50, directory + "blank_slidenumberpause.pgm")   
-        LOAD_AREA(tmp, 1, (3,0))
+    b_Check = directory + "check_brightness2.pgm"; b_Uncheck = directory + "uncheck_brightness2.pgm"
+        
+    if   TOUCH_ZONE([[476,1730], [525,1850]]): CHECK(menu.bght, 0, 'display', b_Check, b_Uncheck); AURORA(0)
+    elif TOUCH_ZONE([[525,1730], [574,1850]]): CHECK(menu.bght, 1, 'display', b_Check, b_Uncheck); AURORA(10)
+    elif TOUCH_ZONE([[574,1730], [623,1850]]): CHECK(menu.bght, 2, 'display', b_Check, b_Uncheck); AURORA(20)
+    elif TOUCH_ZONE([[623,1730], [672,1850]]): CHECK(menu.bght, 3, 'display', b_Check, b_Uncheck); AURORA(30)
+    elif TOUCH_ZONE([[672,1730], [721,1850]]): CHECK(menu.bght, 4, 'display', b_Check, b_Uncheck); AURORA(40)
+    elif TOUCH_ZONE([[721,1730], [770,1850]]): CHECK(menu.bght, 5, 'display', b_Check, b_Uncheck); AURORA(50)
+    elif TOUCH_ZONE([[770,1730], [819,1850]]): CHECK(menu.bght, 6, 'display', b_Check, b_Uncheck); AURORA(60)
+    elif TOUCH_ZONE([[819,1730], [868,1850]]): CHECK(menu.bght, 7, 'display', b_Check, b_Uncheck); AURORA(70)
+    elif TOUCH_ZONE([[868,1730], [917,1850]]): CHECK(menu.bght, 8, 'display', b_Check, b_Uncheck); AURORA(80)
+    elif TOUCH_ZONE([[917,1730], [966,1850]]): CHECK(menu.bght, 9, 'display', b_Check, b_Uncheck); AURORA(90)
     
-    # ----- DISPLAYING CONTENT ------------
-    if   origin == 'main':
-        BUTTONS(menu.bght, 'display', b_Check, b_Uncheck)
-    elif origin == 'slideshow':
-        if slideshow.wfm[N] != wfm_Disp.text: 
-            DISPLAY(slideshow.wfm[N], 'part')
-        else:
-            DISPLAY(wfm_Disp.text, 'part')  
-        BUTTONS(pset, 'display') 
-        BUTTONS(menu.bght, 'display', b_Check, b_Uncheck)
+    return
         
-    # ----- STAY IN MENU UNTIL SPECIFIED -----------
-    while True:   
-        
-        # ----- WAITING FOR INPUT ----------
-        GET_INPUT() 
-        if touch:            
-            if   TOUCH_ZONE([.0000*cm.wsize,.5130*cm.hsize], [.2778*cm.wsize,.5771*cm.hsize]): CHECK(menu.bght, 0, 'display', b_Check, b_Uncheck); AURORA(100)
-            elif TOUCH_ZONE([.0000*cm.wsize,.5771*cm.hsize], [.2778*cm.wsize,.6406*cm.hsize]): CHECK(menu.bght, 1, 'display', b_Check, b_Uncheck); AURORA(80)
-            elif TOUCH_ZONE([.0000*cm.wsize,.6406*cm.hsize], [.2778*cm.wsize,.7042*cm.hsize]): CHECK(menu.bght, 2, 'display', b_Check, b_Uncheck); AURORA(60)
-            elif TOUCH_ZONE([.0000*cm.wsize,.7042*cm.hsize], [.2778*cm.wsize,.7677*cm.hsize]): CHECK(menu.bght, 3, 'display', b_Check, b_Uncheck); AURORA(40)
-            elif TOUCH_ZONE([.0000*cm.wsize,.7677*cm.hsize], [.2778*cm.wsize,.8313*cm.hsize]): CHECK(menu.bght, 4, 'display', b_Check, b_Uncheck); AURORA(20)
-            elif TOUCH_ZONE([.0000*cm.wsize,.8313*cm.hsize], [.2778*cm.wsize,.8948*cm.hsize]): CHECK(menu.bght, 5, 'display', b_Check, b_Uncheck); AURORA(0)
-            elif TOUCH_ZONE([.1493*cm.wsize,.8854*cm.hsize], [.3125*cm.wsize,1.000*cm.hsize]): F_lighting()
-            elif TOUCH_ZONE([.6910*cm.wsize,.8854*cm.hsize], [.8507*cm.wsize,1.000*cm.hsize]): pass # F_highlighter() 
-            elif TOUCH_ZONE([.0000*cm.wsize,.9375*cm.hsize], [.1493*cm.wsize,1.000*cm.hsize]): 
-                if   origin == 'main': F_msettings()
-                elif origin == 'slideshow': F_psettings()
-            else: break
-                    
-        if button: # if the up/down button was pressed, moves appropriately using BUTTONS()
-            BUTTONS(menu.bght, 'display', b_Check, b_Uncheck)
-            if menu.bght.check == 0: AURORA(100)
-            if menu.bght.check == 1: AURORA(80)
-            if menu.bght.check == 2: AURORA(60)
-            if menu.bght.check == 3: AURORA(40)
-            if menu.bght.check == 4: AURORA(20)
-            if menu.bght.check == 5: AURORA(0)
-  
 #-----------------------------------------------------------------------------------------------
 #------ DISP/FLSH MENU -------------------------------------------------------------------------
 #----------------------------------------------------------------------------------------------- 
 
 def F_dispflsh():
-    
     # ----- LOADING CONTENT ------------
-    LOAD(directory + "menu_dispflsh.pgm", 1)
+    LOAD(directory + "menu_dispflsh.pgm")
     WINDOW_HEADER('Display/Flash menu')
-
-    # ----- DISPLAYING CONTENT (W/O BUTTONS) ------------   
-    DISPLAY(wfm_Disp.text, 'full') # Since always displaying over a previous menu, text display wfm#3 will always work 
         
     # ----- STAY IN MENU UNTIL SPECIFIED -----------
     while True:
@@ -438,12 +434,15 @@ def F_dispflsh():
             elif TOUCH_ZONE([545,1295],   [730,1450]): REPLACE_DATA('flsh', 'strd', 'slideshow') 
             elif TOUCH_ZONE([790,1295],   [920,1450]): REPLACE_DATA('flsh', 'fast', 'slideshow') 
             elif TOUCH_ZONE([1000,1295], [1160,1450]): REPLACE_DATA('auto', auto_Opp, 'slideshow')  
-            elif TOUCH_ZONE([.0000*cm.wsize,.9375*cm.hsize], [.1493*cm.wsize,1.000*cm.hsize]): F_brightness()           
-            elif TOUCH_ZONE([.1493*cm.wsize,.8854*cm.hsize], [.3125*cm.wsize,1.000*cm.hsize]): F_lighting()
-            elif TOUCH_ZONE([.6910*cm.wsize,.8854*cm.hsize], [.8507*cm.wsize,1.000*cm.hsize]): pass # F_highlighter() 
-            elif TOUCH_ZONE([.6736*cm.wsize,.1771*cm.hsize], [.7708*cm.wsize,.2396*cm.hsize]): return 'back'  
-            elif TOUCH_ZONE([.7743*cm.wsize,.1781*cm.hsize], [.8590*cm.wsize,.2417*cm.hsize]): return 'exit' # exit button 
-            elif TOUCH_ZONE([.8507*cm.wsize,.8854*cm.hsize], [1.000*cm.wsize,1.000*cm.hsize]): return 'exit' # settings button
+            elif TOUCH_ZONE(TOUCH_DICT['slider']): 
+                if   device.slide == 'bght': F_brightness()
+                elif device.slide == 'temp': F_temperature()
+            elif TOUCH_ZONE(TOUCH_DICT['brightness_button']): BUTTON_BRIGHTNESS()
+            elif TOUCH_ZONE(TOUCH_DICT['temperature_button']): BUTTON_TEMPERATURE() 
+            elif TOUCH_ZONE(TOUCH_DICT['sketch_button']): F_sketch()
+            elif TOUCH_ZONE(TOUCH_DICT['back_button']): return 'back'  
+            elif TOUCH_ZONE(TOUCH_DICT['exit_button']): return 'exit' # exit button 
+            elif TOUCH_ZONE(TOUCH_DICT['settings_button']): return 'exit' # settings button
             else: continue
         
 #-----------------------------------------------------------------------------------------------
@@ -451,155 +450,150 @@ def F_dispflsh():
 #----------------------------------------------------------------------------------------------- 
         
 def F_gotoslide():
-    
     # ----- LOADING CONTENT ------------
-    LOAD(directory + 'menu_gotoslide.pgm', 1)  
+    LOAD(directory + 'menu_gotoslide.pgm')  
     WINDOW_HEADER('Go-to-slide menu')  
     GET_SLIDE((849, 617))
     slide = ""   
     
     while True:        
-        s_Check = directory + "check_bar.pgm"; s_Uncheck = directory + "uncheck_bar.pgm"
-        BUTTONS(menu.sshw, "no display", s_Check, s_Uncheck)
-
         img = Image.open(directory + "blank_gotoslide.pgm")
         I1 = ImageDraw.Draw(img)
         myFont = ImageFont.truetype(r"/mnt/mmc/images/charmr/TrueTypeFonts/Serif_DejaVu.ttf", 80)
         I1.text((10, 10), slide, font=myFont, fill=0)
         
         img.save(directory + "tmp_gotoslide.pgm")
-        LOAD_AREA(directory + 'tmp_gotoslide.pgm', 1, (758, 743))        
-        DISPLAY(wfm_Disp.text, 'part')
+        LOAD_AREA(directory + 'tmp_gotoslide.pgm', (758, 743))  
+        
+        s_Check = directory + "check_bar.pgm"; s_Uncheck = directory + "uncheck_bar.pgm"
+        BUTTONS(menu.sshw, "display", s_Check, s_Uncheck)
         
         GET_INPUT()
         if touch:
-            if   TOUCH_ZONE([760,490],  [860,610]):   CHECK(menu.sshw, 0, None, s_Check, s_Uncheck); CHANGE_SLIDESHOW(1); GET_SLIDE((849, 617))
-            elif TOUCH_ZONE([876,490],  [976,610]):   CHECK(menu.sshw, 1, None, s_Check, s_Uncheck); CHANGE_SLIDESHOW(2); GET_SLIDE((849, 617))
-            elif TOUCH_ZONE([992,490], [1092,610]):   CHECK(menu.sshw, 2, None, s_Check, s_Uncheck); CHANGE_SLIDESHOW(3); GET_SLIDE((849, 617))
+            if   TOUCH_ZONE([[760,490],  [860,610]]):   CHECK(menu.sshw, 0, None, s_Check, s_Uncheck); CHANGE_SLIDESHOW(1); GET_SLIDE((849, 617))
+            elif TOUCH_ZONE([[876,490],  [976,610]]):   CHECK(menu.sshw, 1, None, s_Check, s_Uncheck); CHANGE_SLIDESHOW(2); GET_SLIDE((849, 617))
+            elif TOUCH_ZONE([[992,490], [1092,610]]):   CHECK(menu.sshw, 2, None, s_Check, s_Uncheck); CHANGE_SLIDESHOW(3); GET_SLIDE((849, 617))
 
-            elif TOUCH_ZONE([440,940],  [627,1080]):  slide = slide + '7'
-            elif TOUCH_ZONE([627,940],  [813,1080]):  slide = slide + '8'
-            elif TOUCH_ZONE([813,940],  [1000,1080]): slide = slide + '9'
-            elif TOUCH_ZONE([440,1080], [627,1220]):  slide = slide + '4' 
-            elif TOUCH_ZONE([627,1080], [813,1220]):  slide = slide + '5'  
-            elif TOUCH_ZONE([813,1080], [1000,1220]): slide = slide + '6' 
-            elif TOUCH_ZONE([440,1220], [627,1360]):  slide = slide + '1'
-            elif TOUCH_ZONE([627,1220], [813,1360]):  slide = slide + '2' 
-            elif TOUCH_ZONE([813,1220], [1000,1360]): slide = slide + '3'
-            elif TOUCH_ZONE([627,1360], [813,1500]):  slide = slide + '0'
-            elif TOUCH_ZONE([440,1360], [627,1500]):  # BACK
+            elif TOUCH_ZONE([[440,940],  [627,1080]]):  slide = slide + '7'
+            elif TOUCH_ZONE([[627,940],  [813,1080]]):  slide = slide + '8'
+            elif TOUCH_ZONE([[813,940],  [1000,1080]]): slide = slide + '9'
+            elif TOUCH_ZONE([[440,1080], [627,1220]]):  slide = slide + '4' 
+            elif TOUCH_ZONE([[627,1080], [813,1220]]):  slide = slide + '5'  
+            elif TOUCH_ZONE([[813,1080], [1000,1220]]): slide = slide + '6' 
+            elif TOUCH_ZONE([[440,1220], [627,1360]]):  slide = slide + '1'
+            elif TOUCH_ZONE([[627,1220], [813,1360]]):  slide = slide + '2' 
+            elif TOUCH_ZONE([[813,1220], [1000,1360]]): slide = slide + '3'
+            elif TOUCH_ZONE([[627,1360], [813,1500]]):  slide = slide + '0'
+            elif TOUCH_ZONE([[440,1360], [627,1500]]):  # BACK
                 slide = slide[:-1]
                 if len(slide) == 0: slide = ""
-            elif TOUCH_ZONE([813,1360], [1000,1500]): # ENTER
+            elif TOUCH_ZONE([[813,1360], [1000,1500]]): # ENTER
                 if int(slide) >= len(slideshow.file):
                     slide = len(slideshow.file)
                 F_slideshow(menu.sshw.check + 1, int(slide) - 2); F_main()
-            elif TOUCH_ZONE([760,1710],   [990,1920]): F_lighting()
-            elif TOUCH_ZONE([1000,1760], [1215,1920]): pass # F_highlighter() 
-            elif TOUCH_ZONE([970,340],    [1110,460]): return 'back'  
-            elif TOUCH_ZONE([1110,340],   [1240,460]): return 'exit' 
-            elif TOUCH_ZONE([1240,1760], [1440,1920]): return 'exit' #settings
+            elif TOUCH_ZONE(TOUCH_DICT['slider']): 
+                if   device.slide == 'bght': F_brightness()
+                elif device.slide == 'temp': F_temperature()
+            elif TOUCH_ZONE(TOUCH_DICT['brightness_button']): BUTTON_BRIGHTNESS()
+            elif TOUCH_ZONE(TOUCH_DICT['temperature_button']): BUTTON_TEMPERATURE() 
+            elif TOUCH_ZONE(TOUCH_DICT['sketch_button']): F_sketch()
+            elif TOUCH_ZONE(TOUCH_DICT['back_button']): return 'back'  
+            elif TOUCH_ZONE(TOUCH_DICT['exit_button']): return 'exit' # exit button 
+            elif TOUCH_ZONE(TOUCH_DICT['settings_button']): return 'exit' # settings button
             
             else: continue
-
-def F_highlighter(): 
-    """
-    The highlighter only works if the image is loaded as 'fast'
-    This means any non-fast rendered images must be converted using color_convert()
-    """
-    global slideshow, N   
-    highlighter = "/mnt/mmc/images/charmr/1440x1920/highlighter.pgm"
-    LOAD(highlighter, 1)   
-    DISPLAY(2, 'full')
     
-    converted = PP1_22_40C(slideshow.path + slideshow.file[N], 'strd', 'fast') # color_convert.PP1_22_40C() for this GAL3 .wbf       
-    # highlight_sketch.txt calls Jaya's ACeP sketch program. The background image is loaded as tmp_converted
-    # This means that the color_convert function must be run regardless of the current wfm
-    os.system("FULL_WFM_MODE=2 PART_WFM_MODE=1 /mnt/mmc/api/tools/acepsketch /mnt/mmc/application/sketch/highlight_sketch1.txt")
-    F_pause() # Go back to pause when finished
-
-#-----------------------------------------------------------------------------------------------
-#------ LIGHTING MENU --------------------------------------------------------------------------
-#-----------------------------------------------------------------------------------------------
-             
-""" device.sect can be 'main', 'pause', or 'psettings' """
-def F_lighting():
-    LOAD(directory + "tmp_lighting.pgm", 1)  
-    WINDOW_HEADER('Lighting menu')   
-    button_Location = 0
-    BUTTONS(lght, 'no display')
-    
-    while True:
-        if device.sect == 'pause':
-            if   slideshow.wfm[N] == wfm_Disp.best: 
-                DISPLAY(wfm_Disp.best, 'full') # Can this transition to a display of 3?
-            elif slideshow.wfm[N] == wfm_Disp.fast: 
-                DISPLAY(wfm_Disp.fast, 'full')  
-            elif slideshow.wfm[N] == wfm_Disp.text:
-                DISPLAY(wfm_Disp.text, 'part')
-            elif slideshow.wfm[N] == wfm_Disp.strd: 
-                DISPLAY(wfm_Disp.fast, 'full')    
-            device.sect = 'psettings' # lighting menu when paused considered a part of 'psettings'
-        elif device.sect == 'psettings':
-            DISPLAY(wfm_Disp.text, 'part')
-        elif device.sect == 'main':   
-            DISPLAY(wfm_Disp.text, 'part')
-            
-        GET_INPUT()
-        if touch:# Touch takes priority over button
-            command = MENU_TOUCH(lght)
-            if   command == 0: os.system('daymode');   lght.location = 0
-            elif command == 1: os.system('nightmode'); lght.location = 1
-            elif command == 2: os.system('amber');     lght.location = 2
-            elif command == 3: os.system('bluemode');  lght.location = 3
-            
-            elif TOUCH_ZONE([0,1800],     [215,1920]): F_brightness()
-            elif TOUCH_ZONE([760,1710],   [990,1920]): #lighting button
-                if   device.sect == 'main': F_main()
-                elif device.sect == 'psettings': F_pause()
-            elif TOUCH_ZONE([1000,1760], [1215,1920]): pass # F_highlighter() 
-            elif TOUCH_ZONE([1115,342],   [1237,464]): #exit
-                if   device.sect == 'main':  F_main()
-                elif device.sect == 'psettings': F_pause()
-            elif TOUCH_ZONE([1240,1760], [1440,1920]): #settings
-                if   device.sect == 'main': F_msettings()
-                elif device.sect == 'psettings': F_psettings()
-            else: # press off of screen somewhere
-                if   device.sect == 'main': F_main()
-                elif device.sect == 'psettings': F_pause()                
-            
-        if button:
-            if select == 0: os.system('daymode');   button_Location = 0
-            if select == 1: os.system('nightmode'); button_Location = 1
-            if select == 2: os.system('amber');     button_Location = 2
-            if select == 3: os.system('bluemode');  button_Location = 3
-
 #-----------------------------------------------------------------------------------------------
 #------ ROTATION MENU --------------------------------------------------------------------------
 #-----------------------------------------------------------------------------------------------  
             
 def F_rotation():
     r_Check = directory + "check_bar.pgm"; r_Uncheck = directory + "uncheck_bar.pgm"
-    LOAD(directory + "menu_rotation.pgm", 1)
+    LOAD(directory + "menu_rotation.pgm")
 
     while True:
         data = GET_DATA('rot', 'slideshow')
         WINDOW_HEADER('Rotation menu')
-        CHECK(menu.rot, int(data), 'no display', r_Check, r_Uncheck)
-        DISPLAY(wfm_Disp.text, 'part')
+        CHECK(menu.rot, int(data), 'display', r_Check, r_Uncheck)
         
         GET_INPUT()
         if touch:
-            if   TOUCH_ZONE([470,900],    [670,1100]): CHECK(menu.rot, 0, None, r_Check, r_Uncheck); REPLACE_DATA('rot', 0, 'slideshow');
-            elif TOUCH_ZONE([770,900],    [970,1100]): CHECK(menu.rot, 1, None, r_Check, r_Uncheck); REPLACE_DATA('rot', 1, 'slideshow'); 
-            elif TOUCH_ZONE([470,1200],   [670,1400]): CHECK(menu.rot, 2, None, r_Check, r_Uncheck); REPLACE_DATA('rot', 2, 'slideshow');
-            elif TOUCH_ZONE([770,1200],   [970,1400]): CHECK(menu.rot, 3, None, r_Check, r_Uncheck); REPLACE_DATA('rot', 3, 'slideshow');
-            elif TOUCH_ZONE([760,1710],   [990,1920]): F_lighting()
-            elif TOUCH_ZONE([1000,1760], [1215,1920]): pass # F_highlighter() 
-            elif TOUCH_ZONE([970,340],    [1110,460]): return 'back'  
-            elif TOUCH_ZONE([1110,340],   [1240,460]): return 'exit' 
-            elif TOUCH_ZONE([1240,1760], [1440,1920]): return 'exit' 
+            if   TOUCH_ZONE([[470,900],    [670,1100]]): CHECK(menu.rot, 0, None, r_Check, r_Uncheck); REPLACE_DATA('rot', 0, 'slideshow');
+            elif TOUCH_ZONE([[770,900],    [970,1100]]): CHECK(menu.rot, 1, None, r_Check, r_Uncheck); REPLACE_DATA('rot', 1, 'slideshow'); 
+            elif TOUCH_ZONE([[470,1200],   [670,1400]]): CHECK(menu.rot, 2, None, r_Check, r_Uncheck); REPLACE_DATA('rot', 2, 'slideshow');
+            elif TOUCH_ZONE([[770,1200],   [970,1400]]): CHECK(menu.rot, 3, None, r_Check, r_Uncheck); REPLACE_DATA('rot', 3, 'slideshow');
+            elif TOUCH_ZONE(TOUCH_DICT['slider']): 
+                if   device.slide == 'bght': F_brightness()
+                elif device.slide == 'temp': F_temperature()
+            elif TOUCH_ZONE(TOUCH_DICT['brightness_button']): BUTTON_BRIGHTNESS()
+            elif TOUCH_ZONE(TOUCH_DICT['temperature_button']): BUTTON_TEMPERATURE() 
+            elif TOUCH_ZONE(TOUCH_DICT['sketch_button']): F_sketch()
+            elif TOUCH_ZONE(TOUCH_DICT['back_button']): return 'back'  
+            elif TOUCH_ZONE(TOUCH_DICT['exit_button']): return 'exit' # exit button 
+            elif TOUCH_ZONE(TOUCH_DICT['settings_button']): return 'exit' # settings button
             else: continue
+
+#-----------------------------------------------------------------------------------------------
+#------ ON-SCREEN SKETCH -----------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------  
+        
+def F_sketch(arg = None):
+    """
+    Clicking the sketch button during a paused slideshow calls acepsketch
+    The draw function only works if the image is loaded as 'fast', highlighter as 'DU'
+    This means for color images, any non-fast rendered images must be color index converted using color_convert()
+    """
+    global slideshow, N   
+    
+    if arg == 'app':
+        CLEAR('best')
+        os.system("FULL_WFM_MODE=2 PART_WFM_MODE=1 /mnt/mmc/api/tools/acepsketch /mnt/mmc/application/sketch/sketch_app.txt") 
+        device.sect = None
+        F_main()
+        return
+    
+    if device.sect == 'psettings': # If demo was in a menu when the sketch button was pressed, remove the menu by reloading  and displaying the slide
+        LOAD(slideshow) # Reload the slideshow slide #N
+        DISPLAY_AREA(slideshow, (0,80), (1440,1715)) #Redisplay the background slideshow     
+
+    if slideshow.wfm[N] == 3: # Only use highlighter on black and white text images
+        LOAD("/mnt/mmc/images/charmr/1440x1920/highlighter.pgm")   
+        DISPLAY(2, 'full')
+        LOAD(slideshow)
+        DISPLAY_AREA(6, (0,80), (1440,1715))
+        converted = PP1_22_40C(slideshow.path + slideshow.file[N], 'text', 'pen') # color_convert.PP1_22_40C() for this GAL3 .wbf       
+        # highlight_sketch.txt calls Jaya's ACeP sketch program. The background image is loaded as tmp_converted
+        # This means that the color_convert function must be run regardless of the current wfm
+        os.system("FULL_WFM_MODE=2 PART_WFM_MODE=1 /mnt/mmc/api/tools/acepsketch /mnt/mmc/application/sketch/sketch_highlighter.txt")
+    else: # else use draw
+        LOAD("/mnt/mmc/images/charmr/1440x1920/draw.pgm")   
+        DISPLAY(2, 'full')
+        converted = PP1_22_40C(slideshow.path + slideshow.file[N], 'strd', 'fast') # color_convert.PP1_22_40C() for this GAL3 .wbf       
+        os.system("FULL_WFM_MODE=2 PART_WFM_MODE=1 /mnt/mmc/api/tools/acepsketch /mnt/mmc/application/sketch/sketch_draw.txt")  
+        
+    F_pause() # Go back to pause when finished
+
+#-----------------------------------------------------------------------------------------------
+#------ TEMPERATURE SCROLL ---------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------
+                      
+def F_temperature(): 
+
+    # ----- LOADING CONTENT ------------
+    b_Check = directory + "check_brightness2.pgm"; b_Uncheck = directory + "uncheck_brightness2.pgm"
+        
+    if   TOUCH_ZONE([[476,1730], [525,1850]]): CHECK(menu.temp, 0, 'display', b_Check, b_Uncheck); AURORA_TEMP(0)
+    elif TOUCH_ZONE([[525,1730], [574,1850]]): CHECK(menu.temp, 1, 'display', b_Check, b_Uncheck); AURORA_TEMP(10)
+    elif TOUCH_ZONE([[574,1730], [623,1850]]): CHECK(menu.temp, 2, 'display', b_Check, b_Uncheck); AURORA_TEMP(20)
+    elif TOUCH_ZONE([[623,1730], [672,1850]]): CHECK(menu.temp, 3, 'display', b_Check, b_Uncheck); AURORA_TEMP(30)
+    elif TOUCH_ZONE([[672,1730], [721,1850]]): CHECK(menu.temp, 4, 'display', b_Check, b_Uncheck); AURORA_TEMP(40)
+    elif TOUCH_ZONE([[721,1730], [770,1850]]): CHECK(menu.temp, 5, 'display', b_Check, b_Uncheck); AURORA_TEMP(50)
+    elif TOUCH_ZONE([[770,1730], [819,1850]]): CHECK(menu.temp, 6, 'display', b_Check, b_Uncheck); AURORA_TEMP(60)
+    elif TOUCH_ZONE([[819,1730], [868,1850]]): CHECK(menu.temp, 7, 'display', b_Check, b_Uncheck); AURORA_TEMP(70)
+    elif TOUCH_ZONE([[868,1730], [917,1850]]): CHECK(menu.temp, 8, 'display', b_Check, b_Uncheck); AURORA_TEMP(80)
+    elif TOUCH_ZONE([[917,1730], [966,1850]]): CHECK(menu.temp, 9, 'display', b_Check, b_Uncheck); AURORA_TEMP(90)
+    
+    return
         
 #-----------------------------------------------------------------------------------------------
 #------ WAVEFORM MENU --------------------------------------------------------------------------
@@ -608,61 +602,68 @@ def F_rotation():
 def F_wfm():
     w_Check = directory + "check_bar.pgm"; w_Uncheck = directory + "uncheck_bar.pgm"
 
-    LOAD(directory + "menu_wfm.pgm", 1)
+    LOAD(directory + "menu_wfm.pgm")
     WINDOW_HEADER('Waveform menu')
     
     if device.sect == 'psettings':
         while True:
             data = GET_DATA('wfm', 'slideshow')
-            CHECK(menu.wfms, int(data), 'no display', w_Check, w_Uncheck)
-            DISPLAY(wfm_Disp.text, 'part')
+            CHECK(menu.wfms, int(data), 'display', w_Check, w_Uncheck)
+           
             GET_INPUT()
             if touch:
-                if   TOUCH_ZONE([300,900],    [510,1100]): CHECK(menu.wfms, 0, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 0, 'slideshow');
-                elif TOUCH_ZONE([510,900],    [720,1100]): CHECK(menu.wfms, 1, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 1, 'slideshow');
-                elif TOUCH_ZONE([720,900],    [930,1100]): CHECK(menu.wfms, 2, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 2, 'slideshow');
-                elif TOUCH_ZONE([930,900],   [1140,1100]): CHECK(menu.wfms, 3, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 3, 'slideshow'); 
-                elif TOUCH_ZONE([300,1100],   [510,1300]): CHECK(menu.wfms, 4, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 4, 'slideshow');
-                elif TOUCH_ZONE([510,1100],   [720,1300]): CHECK(menu.wfms, 5, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 5, 'slideshow');
-                elif TOUCH_ZONE([720,1100],   [930,1300]): CHECK(menu.wfms, 6, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 6, 'slideshow');
-                elif TOUCH_ZONE([930,1100],  [1140,1300]): CHECK(menu.wfms, 7, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 7, 'slideshow');  
-                elif TOUCH_ZONE([760,1710],   [990,1920]): F_lighting()
-                elif TOUCH_ZONE([1000,1760], [1215,1920]): pass # F_highlighter() 
-                elif TOUCH_ZONE([970,340],    [1110,460]): return 'back'  
-                elif TOUCH_ZONE([1110,340],   [1240,460]): return 'exit' 
-                elif TOUCH_ZONE([1240,1760], [1440,1920]): return 'exit' 
+                if   TOUCH_ZONE([[300,900],    [510,1100]]): CHECK(menu.wfms, 0, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 0, 'slideshow');
+                elif TOUCH_ZONE([[510,900],    [720,1100]]): CHECK(menu.wfms, 1, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 1, 'slideshow');
+                elif TOUCH_ZONE([[720,900],    [930,1100]]): CHECK(menu.wfms, 2, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 2, 'slideshow');
+                elif TOUCH_ZONE([[930,900],   [1140,1100]]): CHECK(menu.wfms, 3, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 3, 'slideshow'); 
+                elif TOUCH_ZONE([[300,1100],   [510,1300]]): CHECK(menu.wfms, 4, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 4, 'slideshow');
+                elif TOUCH_ZONE([[510,1100],   [720,1300]]): CHECK(menu.wfms, 5, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 5, 'slideshow');
+                elif TOUCH_ZONE([[720,1100],   [930,1300]]): CHECK(menu.wfms, 6, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 6, 'slideshow');
+                elif TOUCH_ZONE([[930,1100],  [1140,1300]]): CHECK(menu.wfms, 7, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 7, 'slideshow');  
+                if   TOUCH_ZONE(TOUCH_DICT['slider']): 
+                    if   device.slide == 'bght': F_brightness()
+                    elif device.slide == 'temp': F_temperature()
+                elif TOUCH_ZONE(TOUCH_DICT['brightness_button']): BUTTON_BRIGHTNESS()
+                elif TOUCH_ZONE(TOUCH_DICT['temperature_button']): BUTTON_TEMPERATURE() 
+                elif TOUCH_ZONE(TOUCH_DICT['sketch_button']): F_sketch() 
+                elif TOUCH_ZONE(TOUCH_DICT['back_button']): return 'back'  
+                elif TOUCH_ZONE(TOUCH_DICT['exit_button']): return 'exit' 
+                elif TOUCH_ZONE(TOUCH_DICT['settings_button']): return 'exit'
                 else: continue
         
     elif device.sect == 'main':
         image = 'banner'
-        while True:
+        while True:          
+            if   image == 'banner':  LOAD(directory + 'menu_wfm_banner.pgm')
+            elif image == 'main':    LOAD(directory + 'menu_wfm_main.pgm')
+            elif image == 'startup': LOAD(directory + 'menu_wfm_startup.pgm')
+            elif image == 'check':   LOAD(directory + 'menu_wfm_checkicons.pgm')           
             data = GET_DATA('wfm', image) # Get data first, so screens pop up around the same time
-            if   image == 'banner':  LOAD(directory + 'menu_wfm_banner.pgm', 1)
-            elif image == 'main':    LOAD(directory + 'menu_wfm_main.pgm', 1)
-            elif image == 'startup': LOAD(directory + 'menu_wfm_startup.pgm', 1)
-            elif image == 'check':   LOAD(directory + 'menu_wfm_checkicons.pgm', 1)
-            WINDOW_HEADER('Waveform menu')
             CHECK(menu.wfmm, int(data), 'display', w_Check, w_Uncheck)
-            DISPLAY(wfm_Disp.text, 'part')    
+
             GET_INPUT()
             if touch:
-                if   TOUCH_ZONE([300,1040],   [510,1240]): CHECK(menu.wfmm, 0, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 0, image);
-                elif TOUCH_ZONE([510,1040],   [720,1240]): CHECK(menu.wfmm, 1, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 1, image);
-                elif TOUCH_ZONE([720,1040],   [930,1240]): CHECK(menu.wfmm, 2, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 2, image);
-                elif TOUCH_ZONE([930,1040],  [1140,1240]): CHECK(menu.wfmm, 3, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 3, image);
-                elif TOUCH_ZONE([300,1240],   [510,1440]): CHECK(menu.wfmm, 4, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 4, image); 
-                elif TOUCH_ZONE([510,1240],   [720,1440]): CHECK(menu.wfmm, 5, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 5, image);
-                elif TOUCH_ZONE([720,1240],   [930,1440]): CHECK(menu.wfmm, 6, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 6, image);
-                elif TOUCH_ZONE([930,1240],  [1140,1440]): CHECK(menu.wfmm, 7, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 7, image);
-                elif TOUCH_ZONE([220,500],     [470,650]): image = 'banner'
-                elif TOUCH_ZONE([470,500],     [720,650]): image = 'main'
-                elif TOUCH_ZONE([720,500],     [970,650]): image = 'startup'
-                elif TOUCH_ZONE([970,500],    [1220,650]): image = 'check'  
-                elif TOUCH_ZONE([760,1710],   [990,1920]): F_lighting() 
-                elif TOUCH_ZONE([1000,1760], [1215,1920]): pass # F_highlighter() 
-                elif TOUCH_ZONE([970,340],    [1110,460]): return 'back'  
-                elif TOUCH_ZONE([1110,340],   [1240,460]): return 'exit' 
-                elif TOUCH_ZONE([1240,1760], [1440,1920]): return 'exit' # self
+                if   TOUCH_ZONE([[300,1040],   [510,1240]]): CHECK(menu.wfmm, 0, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 0, image);
+                elif TOUCH_ZONE([[510,1040],   [720,1240]]): CHECK(menu.wfmm, 1, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 1, image);
+                elif TOUCH_ZONE([[720,1040],   [930,1240]]): CHECK(menu.wfmm, 2, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 2, image);
+                elif TOUCH_ZONE([[930,1040],  [1140,1240]]): CHECK(menu.wfmm, 3, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 3, image);
+                elif TOUCH_ZONE([[300,1240],   [510,1440]]): CHECK(menu.wfmm, 4, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 4, image); 
+                elif TOUCH_ZONE([[510,1240],   [720,1440]]): CHECK(menu.wfmm, 5, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 5, image);
+                elif TOUCH_ZONE([[720,1240],   [930,1440]]): CHECK(menu.wfmm, 6, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 6, image);
+                elif TOUCH_ZONE([[930,1240],  [1140,1440]]): CHECK(menu.wfmm, 7, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 7, image);
+                elif TOUCH_ZONE([[220,500],     [470,650]]): image = 'banner'
+                elif TOUCH_ZONE([[470,500],     [720,650]]): image = 'main'
+                elif TOUCH_ZONE([[720,500],     [970,650]]): image = 'startup'
+                elif TOUCH_ZONE([[970,500],    [1220,650]]): image = 'check'  
+                if   TOUCH_ZONE(TOUCH_DICT['slider']): 
+                    if   device.slide == 'bght': F_brightness()
+                    elif device.slide == 'temp': F_temperature()
+                elif TOUCH_ZONE(TOUCH_DICT['brightness_button']): BUTTON_BRIGHTNESS()
+                elif TOUCH_ZONE(TOUCH_DICT['temperature_button']): BUTTON_TEMPERATURE() 
+                elif TOUCH_ZONE(TOUCH_DICT['sketch_button']): F_sketch() 
+                elif TOUCH_ZONE(TOUCH_DICT['back_button']): return 'back'  
+                elif TOUCH_ZONE(TOUCH_DICT['exit_button']): return 'exit' 
+                elif TOUCH_ZONE(TOUCH_DICT['settings_button']): return 'exit'
                 else: continue       
 
 #################################################################################################################################################################
@@ -677,7 +678,7 @@ def APP_SELECTOR(arg):
             if    i+1 == arg: F_slideshow(slideshow_number)
             else: slideshow_number += 1
         elif app_List[i].form == 'sketch': 
-            if    i+1 == arg: SKETCH('app')
+            if    i+1 == arg: F_sketch('app')
 
 def AURORA(brt):  
     """
@@ -689,12 +690,32 @@ def AURORA(brt):
     """
     global button, select, menu
     
-    subprocess.call("AURORA_UPDATE=off aurora3 set_brt 4 " + str(brt*(.8)), shell=True)
-    subprocess.call("AURORA_UPDATE=off aurora3 set_brt 3 " + str(brt*(.8)), shell=True)
-    subprocess.call("AURORA_UPDATE=off aurora3 set_brt 2 " + str(brt*(.8)), shell=True)
-    subprocess.call("aurora3 set_brt 1 " + str(brt*(.8)), shell=True)    
+    subprocess.call("AURORA_UPDATE=off aurora3 set_brt 4 " + str(brt), shell=True)
+    subprocess.call("AURORA_UPDATE=off aurora3 set_brt 3 " + str(brt), shell=True)
+    subprocess.call("AURORA_UPDATE=off aurora3 set_brt 2 " + str(brt), shell=True)
+    subprocess.call("aurora3 set_brt 1 " + str(brt), shell=True)
     
-    menu.bght.check = (100 - int(brt))/20
+    menu.bght.check = brt/10 
+    
+def AURORA_TEMP(temp):  
+    """
+    temp can be 0 to 9 (10 different temperatures)
+    temp2=20 when temp=0
+    temp1=20 when temp=9
+    
+    """
+    global button, select, menu
+    
+    temp1 = int(np.rint(temp*20/90))
+    temp2 = int(np.rint(20-temp*20/90))
+    
+    subprocess.call("AURORA_UPDATE=off aurora3 set_cur 1 " + str(temp1), shell=True)
+    subprocess.call("AURORA_UPDATE=off aurora3 set_cur 2 " + str(temp2), shell=True)
+    subprocess.call("AURORA_UPDATE=off aurora3 set_cur 3 " + str(temp1), shell=True)
+    subprocess.call("aurora3 set_cur 4 " + str(temp2), shell=True)
+    
+    menu.temp.check = temp/10
+
 
 def BUTTONS(MENU, disp = 'display', check_File = str(cm.check.file), uncheck_File = str(cm.uncheck.file)):
     """
@@ -712,7 +733,7 @@ def BUTTONS(MENU, disp = 'display', check_File = str(cm.check.file), uncheck_Fil
             subprocess.call('bs_load_img_area ' + str(cm.check.rot) + " " + str(MENU.locations[0]) + " " + str(MENU.locations[1]) + " " + check_File, shell = True)
         else:     
             subprocess.call('bs_load_img_area ' + str(cm.uncheck.rot) + " " + str(MENU.locations[0]) + " " + str(MENU.locations[1]) + " " + uncheck_File, shell = True)  
-        if disp == 'display': DISPLAY(cm.check.wfm, 'part')
+        if disp == 'display': DISPLAY(cm.check, 'part')
         return
     
     n = len(MENU.locations)
@@ -731,11 +752,21 @@ def BUTTONS(MENU, disp = 'display', check_File = str(cm.check.file), uncheck_Fil
             subprocess.call('bs_load_img_area ' + str(cm.uncheck.rot) + " " + str(MENU.locations[i][0]) + " " + str(MENU.locations[i][1]) + " " + uncheck_File, shell = True)
         else:
             subprocess.call('bs_load_img_area ' + str(cm.check.rot) + " " + str(MENU.locations[i][0]) + " " + str(MENU.locations[i][1]) + " " + check_File, shell = True)  
-    if   disp == 'display': DISPLAY(cm.check.wfm, 'part')
+    if   disp == 'display': DISPLAY(cm.check, 'part')
     if   button == 'down': MENU.check = (MENU.check+1)%n
     elif button == 'up': MENU.check = (MENU.check-1)%n
     button = False
     WAIT(100)
+    
+def BUTTON_BRIGHTNESS():
+    LOAD_AREA(directory + 'label_brightness.pgm', (616,1718))   
+    BUTTONS(bght, 'no display', directory + "check_brightness2.pgm", directory + "uncheck_brightness2.pgm")
+    device.slide = 'bght'
+
+def BUTTON_TEMPERATURE():
+    LOAD_AREA(directory + 'label_temperature.pgm', (616,1718));
+    BUTTONS(temp, 'no display', directory + "check_brightness2.pgm", directory + "uncheck_brightness2.pgm")
+    device.slide = 'temp'
 
 def CHANGE_SLIDE(direction, style = None): # Moves to next slide of slideshow
     """
@@ -760,18 +791,18 @@ def CHANGE_SLIDE(direction, style = None): # Moves to next slide of slideshow
     elif direction == "next": 
         N += 1; prev = -1; swipe = 'left'
         if N >= len(slideshow.file): CLEAR("full"); F_main()
-        LOAD(slideshow.path + slideshow.file[N], slideshow.rot[N])
+        LOAD(slideshow)
     elif direction == "back":
         N -= 1; prev = 1; swipe = 'right'
         if N < 0: N = 0 # If already on first slide, remain there
-        LOAD(slideshow.path + slideshow.file[N], slideshow.rot[N])
+        LOAD(slideshow)
     elif direction == "back two":
         N -= 2; prev = 2; swipe = 'right'
         if N < 0: N = 0 # If already on first slide, remain there
-        LOAD(slideshow.path + slideshow.file[N], slideshow.rot[N])    
+        LOAD(slideshow)    
     elif direction == "remain": 
         if style == None:
-            DISPLAY(slideshow.wfm[N], slideshow.disp[N])            
+            DISPLAY(slideshow, slideshow.disp[N])            
         if style == "swipe":
             DISPLAY_SWIPE("left", wfm_Disp.text)    
         if style == 'center-out':
@@ -825,7 +856,7 @@ def CHANGE_SLIDE(direction, style = None): # Moves to next slide of slideshow
             elif slideshow.wfm[N+prev] == wfm_Disp.fast: DISPLAY(wfm_Disp.strd, slideshow.disp[N])   
             elif slideshow.wfm[N+prev] == wfm_Disp.text: DISPLAY(wfm_Disp.text, slideshow.disp[N]) 
             elif slideshow.wfm[N+prev] == wfm_Disp.strd: DISPLAY(wfm_Disp.strd, slideshow.disp[N]) 
-            else: DISPLAY(slideshow.wfm[N], slideshow.disp[N])           
+            else: DISPLAY(slideshow, slideshow.disp[N])           
         elif slideshow.wfm[N] == wfm_Disp.strd: # Strd color
             if   slideshow.wfm[N+prev] == wfm_Disp.best: CLEAR('best'); DISPLAY(wfm_Disp.strd, slideshow.disp[N])
             elif slideshow.wfm[N+prev] == wfm_Disp.fast: DISPLAY(wfm_Disp.strd, slideshow.disp[N])  
@@ -865,7 +896,6 @@ def CHECK(MENU, new_Check=0, disp = None, check_File = cm.check.file, uncheck_Fi
     BUTTONS(MENU, disp, check_File, uncheck_File)
 
 def CLEAR(flsh, disp = 'full'):
-    global slideshow; N
     """
     Clears the current screen. Takes one of 5 arguments: 'slideshow', 'full', 'fast', 'strd', 'best', or 'none'
     'slideshow': Manages clearing before the current slide in the slideshow, based on user specifications and recommendations
@@ -873,19 +903,19 @@ def CLEAR(flsh, disp = 'full'):
     Auto flash is set to 'norm' (standard display white flash)
     """ 
     if  flsh == 'full': 
-        LOAD(directory + 'white240.pgm', 1); 
+        LOAD(directory + 'white240.pgm'); 
         subprocess.call("bs_disp_" + disp + " 0", shell = True)    
     elif flsh == 'text': 
-        LOAD(directory + 'white240.pgm', 1); 
+        LOAD(directory + 'white240.pgm'); 
         subprocess.call("bs_disp_" + disp + " 3", shell = True)
     elif flsh == 'fast':   
-        LOAD(directory + 'white240.pgm', 1); 
+        LOAD(directory + 'white240.pgm'); 
         subprocess.call("bs_disp_" + disp + " 4", shell = True)
     elif flsh == 'strd': 
-        LOAD(directory + 'white240.pgm', 1); 
+        LOAD(directory + 'white240.pgm'); 
         subprocess.call("bs_disp_" + disp + " 2", shell = True)
     elif flsh == 'best': 
-        LOAD(directory + 'white240.pgm', 1); 
+        LOAD(directory + 'white240.pgm'); 
         subprocess.call("bs_disp_" + disp + " 5", shell = True)
     elif flsh == 'none': pass
 
@@ -909,9 +939,9 @@ def CLOCK(arg = "check"):
         if   cm.wsize == 1440: time_Written = TEXT_TO_IMAGE(current_Time, "Sans_Monofonto.otf", 52, directory + "blank_time.pgm", (10,7))
         elif cm.wsize == 1264: time_Written = TEXT_TO_IMAGE(current_Time, "Sans_Monofonto.otf", 42, directory + "blank_time.pgm", (0,10))
         if hour < 10:
-            LOAD_AREA(time_Written, 1, cm.area.clock[0])
+            LOAD_AREA(time_Written, cm.area.clock[0])
         else: 
-            LOAD_AREA(time_Written, 1, cm.area.clock[1])
+            LOAD_AREA(time_Written, cm.area.clock[1])
         if arg != "load":
             DISPLAY(wfm_Disp.text, "part")
         
@@ -920,28 +950,41 @@ def COMMAND(string, call):
     elif call == 'os':    os.system(string)
     elif call == 'Popen': subprocess.Popen(string, stdout=subprocess.PIPE, shell = True)
 
-def DISPLAY(wfm, method = 'full'):
-    subprocess.call('bs_disp_' + method + ' ' + str(wfm), shell = True)
-              
-def DISPLAY_AREA(wfm, pos1, pos2):
+def DISPLAY(WFM, method = 'full'):
+    if isinstance(WFM, cm.IMAGE):
+        if isinstance(WFM.wfm, list):
+            wfm = WFM.wfm[N]
+        else:
+            wfm = WFM.wfm   
+        COMMAND('bs_disp_' + method + ' ' + str(wfm), 'sub')
+    else: 
+        COMMAND('bs_disp_' + method + ' ' + str(WFM), 'sub')
+        
+def DISPLAY_AREA(WFM, pos1, pos2, rot=1): # pos1 is upper left coordinate tuple and pos2 is lower right coordinate tuple
+    if isinstance(WFM, cm.IMAGE):
+        if isinstance(WFM.wfm, list):
+            wfm = WFM.wfm[N]
+            rot = WFM.rot[N]
+        else: 
+            wfm = WFM.wfm  
+    else: wfm = WFM
+    
     """
     Displays the image loaded into the buffer.
-    wfm: The waveform number used in displaying
+    WFM: The waveform number used in displaying (or object of IMAGE class from charmer module)
     method = 'full' or 'part': 'full' updates the entire area while 'part' only updates pixels of different values
     pos1, pos2: The area on the screen to be displayed. 
         Measured as (x,y) from the top left of the screen, pos1 is the top left corner of the display area (x1,y1) 
         and pos2 is the bottom right corner of the display area (x2,y2), making a rectangle of area (x2-x1) * (y2-y1)
-    """
-    global rotation_Current, slideshow, N
-  
+    """  
     X = ' '; SSX = cm.hsize; SSY = cm.wsize
-    if   rotation_Current == 1:
+    if   rot == 1:
         COMMAND('bs_disp_full_area ' + str(wfm) +X+ str(pos1[0]) +X+ str(pos1[1]) +X+ str(pos2[0]-pos1[0]) +X+ str(pos2[1]-pos1[1]), 'sub')
-    elif rotation_Current == 0: 
+    elif rot == 0: 
         COMMAND('bs_disp_full_area ' + str(wfm) +X+ str(SSY - pos1[1]) +X+ str(pos1[0]) +X+ str(pos2[1]-pos1[1]) +X+ str(pos2[0] - pos1[0]), 'sub') 
-    elif rotation_Current == 2:
+    elif rot == 2:
         COMMAND('bs_disp_full_area ' + str(wfm) +X+ str(pos1[1]) +X+ str(SSX - pos1[0]) +X+ str(pos2[1]-pos1[1]) +X+ str(pos2[0] - pos1[0]) + ' block_rails_active', 'sub') 
-    elif rotation_Current == 3:
+    elif rot == 3:
         COMMAND('bs_disp_full_area ' + str(wfm) +X+ str(SSX - pos1[0]) +X+ str(SSY - pos1[1]) +X+ str(pos2[0]-pos1[0]) +X+ str(pos2[1]-pos1[1]) + ' block_rails_active', 'sub')
     
 def DISPLAY_CENTER_OUT(wfm):
@@ -1235,30 +1278,45 @@ def GET_INPUT(swipe = None, t=None): # Optional t input is the timeout, meant fo
         if cm.touch: touchd_proc.kill()
         
 def GET_SLIDE(arg):
-    global slideshow, N
     img = Image.open(directory + "blank_gotoslide.pgm")
     I1 = ImageDraw.Draw(img)
     I1.fontmode = "1"
     myFont = ImageFont.truetype(r"/mnt/mmc/images/charmr/TrueTypeFonts/Serif_DejaVu.ttf", 80)
     I1.text((10, 10), str(N + 1) + '/' + str(len(slideshow.file)), font=myFont, fill=0)
     img.save(directory + 'tmp_currentslide.pgm')
-    LOAD_AREA(directory + 'tmp_currentslide.pgm', 1, arg)       
+    LOAD_AREA(directory + 'tmp_currentslide.pgm', arg)       
     
-def LOAD(img, rot):
-    global rotation_Current
-    rotation_Current = rot
-    subprocess.call('bs_load_img ' + str(rot) + ' ' + str(img), shell = True)
+def LOAD(img, rot=1): # Can take img = slideshow as only argument, determines what to load from there.
+    if isinstance(img, cm.IMAGE):
+        if isinstance(img.rot, list):
+            img2 = img.path + img.file[N]
+            rot2 = img.rot[N]
+        else: 
+            img2 = img.file
+            rot2 = img.rot
+    else: img2 = img; rot2 = rot
+            
+    subprocess.call('bs_load_img ' + str(rot2) + ' ' + str(img2), shell = True)
     
-def LOAD_AREA(img, rot, pos):
+def LOAD_AREA(img, pos, rot=1): #pos = screen coordinate tuple from top left (x,y)
     X = ' '; SSX = cm.hsize; SSY = cm.wsize
+    if isinstance(img, cm.IMAGE):
+        if isinstance(img.rot, list):
+            img2 = img.path + img.file[N]
+            rot2 = img.rot[N]
+        else: 
+            img2 = img.file
+            rot2 = img.rot
+    else: img2 = img; rot2 = rot
+                        
     if   str(rot) == '1':
-        subprocess.call('bs_load_img_area ' + str(rot) +X+ str(pos[0]) +X+ str(pos[1]) +X+ str(img), shell = True)
+        subprocess.call('bs_load_img_area ' + str(rot2) +X+ str(pos[0]) +X+ str(pos[1]) +X+ str(img2), shell = True)
     elif str(rot) == '0':
-        subprocess.call('bs_load_img_area ' + str(rot) +X+ str(SSY - pos1[1]) +X+ str(pos1[0]) +X+ str(img), shell = True)
+        subprocess.call('bs_load_img_area ' + str(rot2) +X+ str(SSY - pos1[1]) +X+ str(pos1[0]) +X+ str(img2), shell = True)
     elif str(rot) == '2':
-        subprocess.call('bs_load_img_area ' + str(rot) +X+ str(pos[1]) +X+ str(SSX - pos[0]) +X+ str(img), shell = True)
+        subprocess.call('bs_load_img_area ' + str(rot2) +X+ str(pos[1]) +X+ str(SSX - pos[0]) +X+ str(img2), shell = True)
     elif str(rot) == '3': 
-        subprocess.call('bs_load_img_area ' + str(rot) + ' ' + str(SSX - pos[0]) + ' ' + str(SSY - pos[1]) + ' ' + str(img), shell = True)
+        subprocess.call('bs_load_img_area ' + str(rot2) + ' ' + str(SSX - pos[0]) + ' ' + str(SSY - pos[1]) + ' ' + str(img2), shell = True)
 
 def LOAD_SAVED_WB():
     subprocess.call("SET_SPECIFIC_TEMP=25 PWRDOWN_DELAY=10 /mnt/mmc/api/tools/cmder bs_load_img 1 tmp/prevwb", shell=True)
@@ -1266,7 +1324,7 @@ def LOAD_SAVED_WB():
 def MENU_BUILD(menu_Type, name = "", items = []):
     if   int(cm.wsize) == 1440 and int(cm.hsize) == 1920: 
         if   menu_Type == 'main': 
-            img = directory + "menu_main.pgm"
+            img = directory + "menu_main2.pgm"
             if cm.app1.name != "": items.append(cm.app1.name)
             if cm.app2.name != "": items.append(cm.app2.name)
             if cm.app3.name != "": items.append(cm.app3.name)
@@ -1326,24 +1384,25 @@ def MENU_TOUCH(button_List):
     
     x1 = math.ceil(.1944*cm.wsize); x2 = math.ceil(.7986*cm.wsize)
     if   len(button_List.locations) == 1:
-        if TOUCH_ZONE([x1,math.ceil(.4219*cm.hsize)], [x2,math.ceil(.5260*cm.hsize)]): CHECK(button_List, 0, 'display'); return 0
+        if TOUCH_ZONE([[x1,math.ceil(.4219*cm.hsize)], [x2,math.ceil(.5260*cm.hsize)]]): CHECK(button_List, 0, 'display'); return 1
     elif len(button_List.locations) == 2:
-        if TOUCH_ZONE([x1,math.ceil(.3281*cm.hsize)], [x2,math.ceil(.4375*cm.hsize)]): CHECK(button_List, 0, 'display'); return 0
-        if TOUCH_ZONE([x1,math.ceil(.5313*cm.hsize)], [x2,math.ceil(.6458*cm.hsize)]): CHECK(button_List, 1, 'display'); return 1       
+        if TOUCH_ZONE([[x1,math.ceil(.3281*cm.hsize)], [x2,math.ceil(.4375*cm.hsize)]]): CHECK(button_List, 0, 'display'); return 1
+        if TOUCH_ZONE([[x1,math.ceil(.5313*cm.hsize)], [x2,math.ceil(.6458*cm.hsize)]]): CHECK(button_List, 1, 'display'); return 2       
     elif len(button_List.locations) == 3:
-        if TOUCH_ZONE([x1,math.ceil(.4323*cm.hsize)], [x2,math.ceil(.5417*cm.hsize)]): CHECK(button_List, 1, 'display'); return 1
-        if TOUCH_ZONE([x1,math.ceil(.5729*cm.hsize)], [x2,math.ceil(.6771*cm.hsize)]): CHECK(button_List, 2, 'display'); return 2
+        if TOUCH_ZONE([[x1,math.ceil(.2969*cm.hsize)], [x2,math.ceil(.4010*cm.hsize)]]): CHECK(button_List, 0, 'display'); return 1
+        if TOUCH_ZONE([[x1,math.ceil(.4323*cm.hsize)], [x2,math.ceil(.5417*cm.hsize)]]): CHECK(button_List, 1, 'display'); return 2
+        if TOUCH_ZONE([[x1,math.ceil(.5729*cm.hsize)], [x2,math.ceil(.6771*cm.hsize)]]): CHECK(button_List, 2, 'display'); return 3
     elif len(button_List.locations) == 4:
-        if TOUCH_ZONE([x1,math.ceil(.2917*cm.hsize)], [x2,math.ceil(.3958*cm.hsize)]): CHECK(button_List, 0, 'display'); return 0
-        if TOUCH_ZONE([x1,math.ceil(.3958*cm.hsize)], [x2,math.ceil(.5104*cm.hsize)]): CHECK(button_List, 1, 'display'); return 1
-        if TOUCH_ZONE([x1,math.ceil(.5104*cm.hsize)], [x2,math.ceil(.6250*cm.hsize)]): CHECK(button_List, 2, 'display'); return 2
-        if TOUCH_ZONE([x1,math.ceil(.6250*cm.hsize)], [x2,math.ceil(.7292*cm.hsize)]): CHECK(button_List, 3, 'display'); return 3  
+        if TOUCH_ZONE([[x1,math.ceil(.2917*cm.hsize)], [x2,math.ceil(.3958*cm.hsize)]]): CHECK(button_List, 0, 'display'); return 1
+        if TOUCH_ZONE([[x1,math.ceil(.3958*cm.hsize)], [x2,math.ceil(.5104*cm.hsize)]]): CHECK(button_List, 1, 'display'); return 2
+        if TOUCH_ZONE([[x1,math.ceil(.5104*cm.hsize)], [x2,math.ceil(.6250*cm.hsize)]]): CHECK(button_List, 2, 'display'); return 3
+        if TOUCH_ZONE([[x1,math.ceil(.6250*cm.hsize)], [x2,math.ceil(.7292*cm.hsize)]]): CHECK(button_List, 3, 'display'); return 4  
     elif len(button_List.locations) == 5:
-        if TOUCH_ZONE([x1,math.ceil(.2708*cm.hsize)], [x2,math.ceil(.3593*cm.hsize)]): CHECK(button_List, 0, 'display'); return 0
-        if TOUCH_ZONE([x1,math.ceil(.3593*cm.hsize)], [x2,math.ceil(.4583*cm.hsize)]): CHECK(button_List, 1, 'display'); return 1
-        if TOUCH_ZONE([x1,math.ceil(.4583*cm.hsize)], [x2,math.ceil(.5521*cm.hsize)]): CHECK(button_List, 2, 'display'); return 2
-        if TOUCH_ZONE([x1,math.ceil(.5521*cm.hsize)], [x2,math.ceil(.6458*cm.hsize)]): CHECK(button_List, 3, 'display'); return 3
-        if TOUCH_ZONE([x1,math.ceil(.6458*cm.hsize)], [x2,math.ceil(.7292*cm.hsize)]): CHECK(button_List, 4, 'display'); return 4
+        if TOUCH_ZONE([[x1,math.ceil(.2708*cm.hsize)], [x2,math.ceil(.3593*cm.hsize)]]): CHECK(button_List, 0, 'display'); return 1
+        if TOUCH_ZONE([[x1,math.ceil(.3593*cm.hsize)], [x2,math.ceil(.4583*cm.hsize)]]): CHECK(button_List, 1, 'display'); return 2
+        if TOUCH_ZONE([[x1,math.ceil(.4583*cm.hsize)], [x2,math.ceil(.5521*cm.hsize)]]): CHECK(button_List, 2, 'display'); return 3
+        if TOUCH_ZONE([[x1,math.ceil(.5521*cm.hsize)], [x2,math.ceil(.6458*cm.hsize)]]): CHECK(button_List, 3, 'display'); return 4
+        if TOUCH_ZONE([[x1,math.ceil(.6458*cm.hsize)], [x2,math.ceil(.7292*cm.hsize)]]): CHECK(button_List, 4, 'display'); return 5
 
 def READ_WB():
     subprocess.call("SET_SPECIFIC_TEMP=25 PWRDOWN_DELAY=10 /mnt/mmc/api/tools/cmder read_wb", shell=True)
@@ -1392,19 +1451,6 @@ def REPLACE_DATA(data_Type, replacement, image):
 def RESTART():
     COMMAND("kill python " + sys.argv[0] + "; python " + sys.argv[0], "sub")        
 
-def SKETCH(arg):
-    """
-    Call to sketch on the screen. Takes optional argument 'app'
-    'app': Calls the main application ACePsketch 
-    no argument: Allows user to draw on the screen on the spot.
-    """
-    global slideshow, N
-    WAIT(100)
-    if   arg == 'app':
-        #subprocess.call("cd /mnt/mmc/application/sketch/", shell = True)
-        subprocess.call("FULL_WFM_MODE=4 PART_WFM_MODE=1 /mnt/mmc/api/tools/acepsketch /mnt/mmc/application/sketch/" + cm.draw_App + ".txt", shell = True)        
-        F_main()
-
 def SLIDE_TIMER():
     global slideshow, N           
     if str(slideshow.wfm[N]) == '2': time_Added = 1024
@@ -1428,14 +1474,12 @@ def TEXT_TO_IMAGE(text_String, font, font_Size, img_Blank, offset = (10, 10)):
     img.save(tmp)
     return tmp         
 
-def TOUCH_ZONE(L1, L2): # Detects whether the touch was in a specific area
+def TOUCH_ZONE(location): # Detects whether the touch was in a specific area
     """
-    L1 and L2 are tuples at the top left corner and bottom right corner of the touch zone, respectively.
-    check is the button number touched, counting from top down (starting at 0)
-
+    location is a list of size 2 of tuples of size 2.
+    The first tuple is the top left corner and second tuple is the bottom right corner of the touch zone, respectively.
     """
-    global wsize
-    if touch[0] > cm.wsize - L2[0] and touch[0] < cm.wsize - L1[0] and touch[1] > L1[1] and touch[1] < L2[1]:   
+    if touch[0] > cm.wsize - location[1][0] and touch[0] < cm.wsize - location[0][0] and touch[1] > location[0][1] and touch[1] < location[1][1]:   
         return True
     else: return False
 
@@ -1447,213 +1491,7 @@ def WAIT(t):
     
 def WINDOW_HEADER(text):
     header = TEXT_TO_IMAGE(text, 'Sans_ZagReg.otf', 60, directory + "blank_window_header.pgm")
-    LOAD_AREA(header, 1, (250,368))  
-    
-#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-# SNAKE GAME :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++                          
-
-def F_snake():
-    global touch
-    score = 0
-    food_Replace = True
-    gameover = False
-    
-    # Initialize 10x10 grid, each pixel contains value food=True/False and body=True/False
-    # All body segments counted nmbr = 0 to N, starting from head. All non-body segments are nmbr = -1
-    grid = np.ndarray((10,10), dtype=np.object) 
-    for i in range(10):
-        for j in range(10):
-            grid[i][j] = SNAKE_ATTRIBUTES(False, False, -1)
-           
-    touch_proc = subprocess.Popen('get_touch -d 10000 -n', stdout=subprocess.PIPE, shell=True) # Start touch detect
-
-    LOAD(directory + "snake_screen.pgm", 1) 
-    DISPLAY(5)
-    WAIT(500)
-
-    I = 1; J = 4
-    move = np.array([1,0])
-    grid[I][J].body=True; grid[I][J].nmbr = 0 # Snake head
-        
-    hiscore = GET_DATA('hscr', 'snake')
-    name = GET_DATA('name', 'snake')
-    
-    tmp = TEXT_TO_IMAGE(str(int(hiscore)), 'Pixel_GBB.ttf', 60, directory + "blank_hi-score.pgm")
-    LOAD_AREA(tmp, 1, (299,633))  
-    
-    tmp = TEXT_TO_IMAGE(str(score), 'Pixel_GBB.ttf', 60, directory + "blank_score.pgm")
-    LOAD_AREA(tmp, 1, (222,490))      
-
-    tmp = TEXT_TO_IMAGE(name[1:-2], 'Pixel_GBB.ttf', 60, directory + "blank_snake_name.pgm")
-    LOAD_AREA(tmp, 1, (185,708))  
-    
-#---------------------------------------------------------------------------------------------------------------------------
-# BEGIN GAME
-#---------------------------------------------------------------------------------------------------------------------------    
-    while gameover == False:       
-        gameover = True
-                
-        if food_Replace == True: # Place food if not already on screen   
-            random1 = np.random.randint(0, 9)
-            random2 = np.random.randint(0, 9)
-            while grid[random1,random2].body == True: # Find location for food snake doesn't exist in
-                random1 = np.random.randint(0, 9)
-                random2 = np.random.randint(0, 9)
-            grid[random1][random2].food = True
-            random1 = random1*50 + 470
-            random2 = random2*50 + 500
-            LOAD_AREA_FAST(directory + "snake_block.pgm", 1, (random1, random2))
-            food_Replace = False
-            
-        touch_proc = subprocess.Popen('get_touch -d 10000 -n', stdout=subprocess.PIPE, shell=True) # Start touch detect        
-#---------------------------------------------------------------------------------------------------------------------------
-# BEGIN MOVEMENT ITERATIONS
-#---------------------------------------------------------------------------------------------------------------------------    
-        while True: 
-
-            newtouch = False
-            if I + move[0] > 9 or I + move[0] < 0 or J + move[1] < 0 or J + move[1] > 9: break
-            
-            i=I; j=J # To trace through the snake and keep track of new integers                    
-            if grid[i + move[0]][j + move[1]].body == True: break # If the head runs into the body, break out
-            if grid[i + move[0]][j + move[1]].food == False: # only erase tail if no food in next spot
-                while True: # Find the highest number (Tail), tracing back down the snake
-                    if    i<9 and grid[i+1][j].nmbr == grid[i][j].nmbr + 1: grid[i][j].nmbr = grid[i][j].nmbr + 1; i += 1; continue
-                    elif  i>0 and grid[i-1][j].nmbr == grid[i][j].nmbr + 1: grid[i][j].nmbr = grid[i][j].nmbr + 1; i -= 1; continue
-                    elif  j<9 and grid[i][j+1].nmbr == grid[i][j].nmbr + 1: grid[i][j].nmbr = grid[i][j].nmbr + 1; j += 1; continue
-                    elif  j>0 and grid[i][j-1].nmbr == grid[i][j].nmbr + 1: grid[i][j].nmbr = grid[i][j].nmbr + 1; j -= 1; continue
-                    else: 
-                        grid[i][j].nmbr = -1 # If last in chain, decrease to -1
-                        grid[i][j].body = False # No longer a body part
-                        LOAD_AREA_FAST(directory + "snake_noblock.pgm", 1, POSITION(i,j)); 
-                        break # TAIL ERASED
-            else: 
-                newtouch = True
-                grid[i + move[0]][j + move[1]].food = False
-                food_Replace = True
-                score += 1
-                
-                tmp = TEXT_TO_IMAGE(str(score), 'Pixel_GBB.ttf', 70, directory + "blank_score.pgm")
-                LOAD_AREA(tmp, 1, (220,480)) 
-
-                while True: 
-                    if    i<9 and grid[i+1][j].nmbr == grid[i][j].nmbr + 1: grid[i][j].nmbr = grid[i][j].nmbr + 1; i += 1; continue
-                    elif  i>0 and grid[i-1][j].nmbr == grid[i][j].nmbr + 1: grid[i][j].nmbr = grid[i][j].nmbr + 1; i -= 1; continue
-                    elif  j<9 and grid[i][j+1].nmbr == grid[i][j].nmbr + 1: grid[i][j].nmbr = grid[i][j].nmbr + 1; j += 1; continue
-                    elif  j>0 and grid[i][j-1].nmbr == grid[i][j].nmbr + 1: grid[i][j].nmbr = grid[i][j].nmbr + 1; j -= 1; continue
-                    else: 
-                        grid[i][j].nmbr = grid[i][j].nmbr + 1 # If last in chain, increase as well
-                        LOAD_AREA_FAST(directory + "snake_block.pgm", 1, POSITION(i,j)); # To keep time frame steps equal
-                        break  
-                    
-            if touch_proc.returncode is not None:
-                touch, err = touch_proc.communicate()
-                touch_Split = touch.split(', ')
-                tx = int(touch_Split[0]); ty = int(touch_Split[1])
-                touch = [tx, ty]    
-                if   TOUCH_ZONE([655,1184],   [787,1310]): 
-                    if move[1] == 1: pass
-                    else: move = np.array([0, -1]) # UP
-                elif TOUCH_ZONE([655,1482],   [787,1613]): 
-                    if move[1] == -1: pass
-                    else: move = np.array([0, 1]) # DOWN
-                elif TOUCH_ZONE([506,1331],   [636,1466]): 
-                    if move[0] == 1: pass
-                    else: move = np.array([-1, 0]) # LEFT
-                elif TOUCH_ZONE([812,1331],   [935,1466]): 
-                    if move[0] == -1: pass
-                    else: move = np.array([1, 0]); # RIGHT
-                elif TOUCH_ZONE([0,1740],     [350,1920]): F_snake()
-                elif TOUCH_ZONE([1090,1740], [1440,1920]): F_main()   
-                newtouch = True
-                break
-                    
-            I = I + move[0]; J = J + move[1]  # Officially change the head position integers                      
-            LOAD_AREA_FAST(directory + "snake_block.pgm", 1, POSITION(I, J)) # LOAD HEAD TO NEXT POSITION   
-            grid[I, J].body = True; grid[I, J].nmbr = 0 # Change head attributes
-            DISPLAY(3, 'part')
-            touch_proc.poll()
-            if touch_proc.returncode is not None:
-                touch, err = touch_proc.communicate()
-                touch_Split = touch.split(', ')
-                tx = int(touch_Split[0]); ty = int(touch_Split[1])
-                touch = [tx, ty]    
-                if   TOUCH_ZONE([655,1184],   [787,1310]): move = np.array([0, -1]) # UP
-                elif TOUCH_ZONE([655,1482],   [787,1613]): move = np.array([0, 1]) # DOWN
-                elif TOUCH_ZONE([506,1331],   [636,1466]): move = np.array([-1, 0]) # LEFT
-                elif TOUCH_ZONE([812,1331],   [935,1466]): move = np.array([1, 0]); # RIGHT
-                elif TOUCH_ZONE([0,1740],     [350,1920]): F_snake()
-                elif TOUCH_ZONE([1090,1740], [1440,1920]): F_main()   
-                newtouch = True
-            if newtouch: gameover = False; break
-    
-    if int(score) > int(hiscore): 
-        REPLACE_DATA('hscr', score, 'snake')
-        LOAD(directory + "snake_hi-score.pgm", 1)
-        DISPLAY(5, "part")
-        name = ""
-        while True:
-            GET_INPUT()
-            if touch:
-                if   TOUCH_ZONE([111,1151],   [231,1271]): name = name + 'Q'
-                elif TOUCH_ZONE([231,1151],   [351,1271]): name = name + 'W'
-                elif TOUCH_ZONE([351,1151],   [471,1271]): name = name + 'E'
-                elif TOUCH_ZONE([471,1151],   [591,1271]): name = name + 'R'
-                elif TOUCH_ZONE([591,1151],   [711,1271]): name = name + 'T'
-                elif TOUCH_ZONE([711,1151],   [831,1271]): name = name + 'Y'
-                elif TOUCH_ZONE([831,1151],   [951,1271]): name = name + 'U'
-                elif TOUCH_ZONE([951,1151],  [1071,1271]): name = name + 'I'
-                elif TOUCH_ZONE([1071,1151], [1191,1271]): name = name + 'O'
-                elif TOUCH_ZONE([1191,1151], [1311,1271]): name = name + 'P'
-                elif TOUCH_ZONE([155,1271],   [275,1391]): name = name + 'A'
-                elif TOUCH_ZONE([275,1271],   [395,1391]): name = name + 'S'
-                elif TOUCH_ZONE([395,1271],   [515,1391]): name = name + 'D'
-                elif TOUCH_ZONE([515,1271],   [635,1391]): name = name + 'F'
-                elif TOUCH_ZONE([635,1271],   [755,1391]): name = name + 'G'
-                elif TOUCH_ZONE([755,1271],   [875,1391]): name = name + 'H'
-                elif TOUCH_ZONE([875,1271],   [995,1391]): name = name + 'J'
-                elif TOUCH_ZONE([995,1271],  [1115,1391]): name = name + 'K'
-                elif TOUCH_ZONE([1115,1271], [1235,1391]): name = name + 'L'
-                elif TOUCH_ZONE([210,1391],   [330,1511]): name = name + 'Z'
-                elif TOUCH_ZONE([330,1391],   [450,1511]): name = name + 'X'
-                elif TOUCH_ZONE([450,1391],   [570,1511]): name = name + 'C'
-                elif TOUCH_ZONE([570,1391],   [690,1511]): name = name + 'V'
-                elif TOUCH_ZONE([690,1391],   [810,1511]): name = name + 'B'
-                elif TOUCH_ZONE([810,1391],   [930,1511]): name = name + 'N'
-                elif TOUCH_ZONE([930,1391],  [1050,1511]): name = name + 'M'         
-                elif TOUCH_ZONE([1066,1406], [1330,1530]): # DELETE BUTTON
-                    name = name[:-1]
-                    if len(name) == 0: name = "" 
-                elif TOUCH_ZONE([1066,1555], [1370,1690]): 
-                    REPLACE_DATA('name', "\'"+str(name)+"\'", 'snake')     
-                    LOAD_AREA(directory + "snake_saved.pgm", 1, (540,1750))
-                    DISPLAY_AREA(5, (570,1750), (870,1900))
-                elif TOUCH_ZONE([0,1740],     [350,1920]): RELOAD(); F_snake()
-                elif TOUCH_ZONE([1090,1740], [1440,1920]): RELOAD(); F_main()  
-                    
-                if len(name) > 3: name = name[:-1] # 3 Character maximum
-                
-                tmp = TEXT_TO_IMAGE("\'"+name+"\'", 'Pixel_GBB.ttf', 110, directory + "blank_snake_name.pgm")
-                LOAD_AREA(tmp, 1, (740,1550)) 
-
-                DISPLAY(4, 'part')
-    
-    else:        
-        LOAD_AREA_FAST(directory + "snake_gameover.pgm", 1, (0, 1140))
-        DISPLAY(3, 'part')
-        while True:
-            GET_INPUT()
-            if   TOUCH_ZONE([0,1740],    [350,1920]):  F_snake()
-            elif TOUCH_ZONE([1090,1740], [1440,1920]): F_main() 
-            
-def LOAD_AREA_FAST(img, rot, pos):
-    X = ' '
-    subprocess.call('bs_load_img_area ' + str(rot) +X+ str(pos[0]) +X+ str(pos[1]) +X+ str(img), shell = True)  
-        
-def POSITION(i, j):
-    value = (470 + (i*50), 500 + (j*50))
-    return value    
+    LOAD_AREA(header, (250,368))    
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # VARIABLE DECLARATIONS AND PROGRAM START ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -1680,10 +1518,17 @@ for i in range(len(wfmm_List)):
     if i >= 4:
         wfmm_List[i] = (366+((i-4)*210), 1400)
         wfms_List[i] = (366+((i-4)*210), 1260)  
-        
-#                 1            2            3             4           5             6    
+
+bght_List = [0]*10
+for i in range(10):
+    bght_List[i] = (476+(i*49), 1772)
+    
+temp_List = [0]*10
+for i in range(10):
+    temp_List[i] = (476+(i*49), 1772)
+    
+#                 1            2            3             4           5 
 rot_List  = [[526, 1060], [833, 1060], [526, 1357],  [833, 1357]]
-bght_List = [[1, 986],    [1, 1108],   [1, 1230],    [1, 1352],   [1, 1474],    [1, 1596]]
 disp_List = [[654, 826],  [990, 826]]
 flsh_List = [[599, 1108], [822, 1108], [1046, 1108], [599, 1300], [822, 1300]]
 auto_List = [1046, 1300]
@@ -1693,7 +1538,7 @@ sshw_List = [[771, 575],  [887, 575],  [1003, 575]]
 main = MENU_CHECK([], 0)
 mset = MENU_CHECK([], 0)
 pset = MENU_CHECK([], 0)
-lght = MENU_CHECK([], 0)
+temp = MENU_CHECK(temp_List, 0)
 rot  = MENU_CHECK(rot_List, 0)
 bght = MENU_CHECK(bght_List, 0)
 disp = MENU_CHECK(disp_List, 0)
@@ -1704,17 +1549,18 @@ wfms = MENU_CHECK(wfms_List, 0)
 sshw = MENU_CHECK(sshw_List, 0)
 
 # All menus easily accessible
-menu = MENUS(main, mset, pset, lght, bght, disp, flsh, auto, wfmm, wfms, rot, sshw)
+menu = MENUS(main, mset, pset, temp, bght, disp, flsh, auto, wfmm, wfms, rot, sshw)
 
+if cm.aurora: # If the demo has aurora lighting, set to default values
+    AURORA(80)
+    AURORA_TEMP(30)
 # Start clearing the screen
 CLEAR('best')
 CLEAR('full')
 CLEAR('text')
-if cm.aurora: # If the demo has aurora lighting, set to default values
-    COMMAND('daymode', 'sub')
-    AURORA(100)
-LOAD(cm.startup.file, cm.startup.rot) # load startup screena and display
-DISPLAY(cm.startup.wfm, 'part')
+
+LOAD(cm.startup) # load startup screen and display
+DISPLAY(cm.startup, 'part')
 
 # Builds all teh regular-style menus. See MENU_BUILD function for details
 img, button_List = MENU_BUILD('main', '_mainmenu') 
@@ -1738,29 +1584,21 @@ img, button_List = MENU_BUILD('menu', '_psettings',
                                )   
 pset_List = button_List
 
-img, button_List = MENU_BUILD('menu', '_lighting',
-                              ['Daymode', 
-                               'Nightmode', 
-                               'Amber', 
-                               'Bluemode']
-                               )
-lght_List = button_List
-
 main = MENU_CHECK(main_List, 0)
 mset = MENU_CHECK(mset_List, 0)
 pset = MENU_CHECK(pset_List, 0)
-lght = MENU_CHECK(lght_List, 0)
 
 ctme = None # Current time
 wifi = None # Detect wifi network
 btth = None # Detect bluetooth
 batt = None # Detect battery level
 sect = None
+slide = None
 if 'device.proc' in locals(): # If the demo is restarted but it failed to kill the process at the end, kill now
     os.kill(device.proc, signal.SIGKILL)
 proc = os.getpid()
 
-device = DEVICE(ctme, wifi, btth, batt, proc, sect)
+device = DEVICE(ctme, wifi, btth, batt, proc, sect, slide)
 
 # wfm PP1 22-40C 
 wfm_Disp = WFM_DISPLAYS(0, 3, 4, 2, 5, 1, 6, 7) # wfm display qualities translated to numbers
