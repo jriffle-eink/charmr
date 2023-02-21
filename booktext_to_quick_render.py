@@ -18,7 +18,6 @@ DASH_LIST = ['\u2014\u2014','\u2014','\u2013', '-'] # U+2013: en-dash, U+2014: e
 
 POST_SUFFIX = ['!\u201D','?\u201D','.\u201D','.',',',';',':','!','?','\u201D'] # U+u201D: right double quotation mark
 
-    
 class HYPHENATED_WORD():
     def __init__(self, word, first_half, second_half, remaining_pixels, buf):
         self.word = word
@@ -27,7 +26,7 @@ class HYPHENATED_WORD():
         self.remaining_pixels = remaining_pixels
         self.buf = buf
 
-class CHAPTER_TO_PGM(object):
+class CHAPTER_TO_QUICK_RENDER(object):
     """ Helper class to wrap text in lines, based on given text, font
         and max allowed line width.
     """
@@ -41,7 +40,6 @@ class CHAPTER_TO_PGM(object):
                  leading=1.2, 
                  indent=None, 
                  page_number=1, 
-                 hyphenation='full',
                  chapter_numbering='roman',
                  file_type = '.pgm'
                  ):
@@ -53,15 +51,18 @@ class CHAPTER_TO_PGM(object):
         self.top_margin = top_margin
         self.leading = self.font.size*leading
         self.indent = indent*self.font.size
-        self.text_paragraphs = None
-        self.chapter_numbering = chapter_numbering
+        self.first_page_number = page_number
         self.page_number = page_number
+        self.start_line = 0
         self.line_number = 0
-        self.hyphenation = hyphenation
         self.file_type = file_type
         self.file_name = file_name
+        self.new_chapter = True
+        self.quick_render = r"C:\Users\jriffle\Documents\Demos\charmr\texts\The_Time_Machine\quick_render.py"
         self.page = Image.new("L", (1440, 1920), 240)
         self.draw_page = ImageDraw.Draw(self.page)
+        self.chapter_number = None # remove the extension
+        self.chapter_numbering = chapter_numbering
         self.draw = ImageDraw.Draw(Image.new(mode='RGB', size=(100, 100)))
         self.space_width = self.draw.textlength(text=' ', font=self.font)
 
@@ -163,16 +164,25 @@ class CHAPTER_TO_PGM(object):
         return roman_number
 
     def new_page(self):
-        self.page = Image.new("L", (1440, 1920), 240)
-        self.draw_page = ImageDraw.Draw(self.page)
-        self.draw = ImageDraw.Draw(Image.new(mode='RGB', size=(100, 100)))
-        self.page_number += 1
         self.line_number = 0
+        self.start_line = 0
+        with open(self.quick_render, 'a', encoding="utf8") as file:
+            file.write("\nP" + str(self.page_number) + "={\n")
+        self.page_number += 1
 
     def save_page(self):
+        with open(self.quick_render, 'a', encoding="utf8") as file:
+            if self.new_chapter:
+                if '--' in self.chapter_number:
+                    file.write("\'CHAPTER\':" + self.chapter_number.split('--')[0] + ",\n")
+                else: 
+                    file.write("\'CHAPTER\':" + self.chapter_number + ",\n")
+            else:
+                file.write("\'CHAPTER\':" + str(None) + ",\n")
+            file.write("\'LINES\':(" + str(self.start_line) + ',' + str(self.line_number-1) + ")\n")
+            file.write("}\n")
         # write page # footer before saving
         w = self.font.getlength(str(self.page_number)) # width of character
-        self.draw_page.text((1440 - self.side_margin - w, 1920 - 0.6*self.top_margin), str(self.page_number), font_size = self.font.size, font=self.font, fill=0)
         
         # For writing the age number to the file name
         if self.page_number < 10: 
@@ -181,36 +191,34 @@ class CHAPTER_TO_PGM(object):
             page_number = "0" + str(self.page_number)
         else: page_number = str(self.page_number)
         
-        if not os.path.exists(os.path.dirname(self.file_name) + "/pages/"):
-            os.makedirs(os.path.dirname(self.file_name) + "/pages/")
-        image_name = os.path.dirname(self.file_name) + "/pages/" + os.path.basename(self.file_name).split('.')[0] + "__" + page_number + self.file_type
-
-        self.page.save(image_name)
+        self.new_chapter = False
     
     def write_chapter_title(self):
         title = os.path.basename(self.file_name).split('.')[0] # remove the extension
-        chapter_number, title = os.path.basename(title).split('__') # remove the extension
+        self.chapter_number, title = os.path.basename(title).split('__') # remove the extension
         
-        if chapter_number[0] == '0': 
-            chapter_number = chapter_number[1:]
+        if self.chapter_number[0] == '0': 
+            self.chapter_number = self.chapter_number[1:]
         title = title.replace("_", " " ) # remove the underscores and replace with spaces
         
         old_size = self.font.size
         self.line_number = 3
         
-        if "--" in chapter_number:
+        if "--" in self.chapter_number:
             text = title
+            
         else:
             if self.chapter_numbering == 'roman': 
-                chapter_number = self.DECIMAL_TO_ROMAN(int(chapter_number))
-                text = chapter_number + ". " + title
+                chapter_number_roman = self.DECIMAL_TO_ROMAN(int(self.chapter_number))
+                text = chapter_number_roman + ". " + title
             if self.chapter_numbering == 'decimal':
-                text = "CHAPTER " + chapter_number + "\n\n" + title
+                text = "CHAPTER " + self.chapter_number + "\n\n" + title
                 
         self.font = ImageFont.truetype(self.font_file, self.font.size + 20)
-        self.draw_page.fontmode = "1"
-        self.draw_page.multiline_text((1440/2,self.top_margin + self.leading*self.line_number), text, font=self.font, fill=0, align='center', anchor='mm')
+        
+        #self.draw_page.multiline_text((1440/2,self.top_margin + self.leading*self.line_number), text, font=self.font, fill=0, align='center', anchor='mm')
         self.line_number = 10
+        self.start_line = 10
         self.font = ImageFont.truetype(self.font_file, old_size)
 
     def get_text_width(self, text):
@@ -220,21 +228,21 @@ class CHAPTER_TO_PGM(object):
         return self.font.getlength(text)
     
     def write_text_line(self, xy, single_line, tracking=0, leading=None):
+        global indentation
         x, y = xy # starting position
         lines = single_line.splitlines()
-        for line in lines:
-            for character in line:
-                w = self.font.getlength(character) # width of character
-                self.draw_page.fontmode = "1"
-                self.draw_page.text((x, y), character, font_size = self.font.size, font=self.font, fill=0)
-                x += w + tracking # Next printing position in pixels
-            x = xy[0]
-    
+        
+        with open(self.quick_render, 'a', encoding="utf8") as file:
+            for line in lines: # There is only one line
+                file.write(str(self.line_number) + ":[" + str(tracking) + "," + str(indentation) + ",\"" + line  + "\"],\n")
+            
     def write_chapter(self):
-        global check
+        global check, indentation
         single_line = []
         buf = []
         buf_width = 0
+        self.new_page()
+        self.new_chapter = True
         
         if self.indent == None: # Default paragraph indent in pixels (dependent on font size)
             self.indent = 2.5*self.font.size
@@ -246,10 +254,10 @@ class CHAPTER_TO_PGM(object):
             self.text = file.read()
         self.text = r"{}".format(self.text)
         
-        self.text_paragraphs = [' '.join([w.strip() for w in l.split(' ') if w]) for l in self.text.split('\n') if l]
+        text_paragraphs = [' '.join([w.strip() for w in l.split(' ') if w]) for l in self.text.split('\n') if l]
         self.write_chapter_title()
         
-        for paragraph in self.text_paragraphs:
+        for paragraph in text_paragraphs:
             indentation = True # Indent the paragraph
             for i, word in enumerate(paragraph.split(' ')):
                 word_width = self.draw.textlength(text=word, font=self.font)
@@ -259,7 +267,7 @@ class CHAPTER_TO_PGM(object):
                 if 2*self.top_margin + self.leading*self.line_number > 1920:
                     self.save_page()
                     self.new_page()
-                    
+
                 # word fits in line
                 if indentation == True and expected_width <= 1440-2*self.side_margin - self.indent:
                     buf_width = expected_width           
@@ -327,18 +335,17 @@ class CHAPTER_TO_PGM(object):
                 self.line_number+=1
                 buf = []
                 buf_width = 0
-
+        
         self.save_page()
 
-def BOOKTEXT_TO_IMAGE(font_file,
+def BOOKTEXT_TO_QUICK_RENDER(font_file,
                       font_size, 
                       side_margin=150, 
                       top_margin=250, 
                       leading=1.2, 
                       indent=None, 
                       file_type='.pgm',
-                      chapter_numbering='roman',
-                      hyphenation='full'
+                      chapter_numbering='roman'
                       ):
 
     r"""
@@ -380,15 +387,6 @@ def BOOKTEXT_TO_IMAGE(font_file,
         chapter numbering: Decimal or roman numeral chapter numbering
             ex. chapter_numbering='decimal'
             ex. chapter_numbering='roman'
-                
-        hyphenation: The program can hyphenate words to make the line fit better
-            within the margins. 
-            Three options exist for hyphenating: 'full', 'part', 'none'
-            The 'full' option does a full search for prefixes and suffixes (slowest rendering)
-            The 'part' option looks for only the most common prefixes and suffixes (faster rendering)
-            The 'none' option does not hyphenate at all (fastest rendering)
-            The default is full hyphenation.
-            ex. hyphenation='full'
     
     The function will run through all .txt files in the directory and output
     numbered pages in the file format of your choice
@@ -405,25 +403,26 @@ def BOOKTEXT_TO_IMAGE(font_file,
                     indent=2, 
                     file_type='.pgm',
                     chapter_numbering='roman'
-                    hyphenation='part'
                     )
-    """    
+    """
     
     path= fd.askdirectory(title="Choose your book directory")
-    file = [] #2#
+    file = []
+    chapter_pages = {}
+    parameters = {}
+    all_chapter_numbers = []
     page_number = 1
     global start_time
-    
     start_time = time.time()
     
-    for i, file in enumerate(os.listdir(path)): #2#
+    for i, file in enumerate(os.listdir(path)):
     
-        if fnmatch.fnmatch(file, '*.txt'): #2#   
+        if fnmatch.fnmatch(file, '*.txt'): 
             
             with open(path + '/' + file, 'r', encoding="utf8") as chapter:
                 chapter = chapter.read()
             chapter = r"{}".format(chapter)
-            chapter = CHAPTER_TO_PGM(font_file = font_file, 
+            chapter = CHAPTER_TO_QUICK_RENDER(font_file = font_file, 
                                      font_size = font_size, 
                                      file_name = path + '/' + file, 
                                      file_type = file_type,
@@ -432,13 +431,45 @@ def BOOKTEXT_TO_IMAGE(font_file,
                                      top_margin = top_margin, 
                                      leading = leading, 
                                      indent = indent, 
-                                     hyphenation = hyphenation,
                                      page_number = page_number)
             
             chapter.write_chapter()
-            print("Chapter " + str(i+1) + " written (page " + str(chapter.page_number) + ")\n")
-            page_number = chapter.page_number + 1
-
+            title = os.path.basename(chapter.file_name).split('.')[0]
+            chapter_number= os.path.basename(title).split('__')[0] 
+            all_chapter_numbers.append(chapter_number)
+            
+            title = os.path.basename(chapter.file_name).split('.')[0] # remove the extension
+            title = os.path.basename(title).split('__')[1] # remove the extension
+            title = title.replace("_", " " ) # remove the underscores and replace with spaces
+            
+            if '--' in chapter_number:
+                chapter_number = chapter_number.split('--')[0]
+                chapter_pages[int(chapter_number)]=(title, chapter.first_page_number, chapter.page_number-1, False)
+            else: 
+                chapter_pages[int(chapter_number)]=(title, chapter.first_page_number, chapter.page_number-1, True)
+            page_number = chapter.page_number  
+            page_number = chapter.page_number  
+            
+            parameters['FONT'] = chapter.font_file
+            parameters['FONT_SIZE'] = chapter.font.size
+            parameters['SIDE_MARGIN'] = chapter.side_margin
+            parameters['TOP_MARGIN'] = chapter.top_margin
+            parameters['LEADING'] = chapter.leading
+            parameters['INDENT'] = chapter.indent
+    
+    parameters
+    with open(chapter.quick_render, 'a', encoding="utf8") as file:
+        file.write("\nPARAMETERS=")
+        file.write(str(parameters))
+        file.write("\nPAGES=(")
+        for n in range(1,page_number):
+            if n == page_number-1:
+                file.write("P" + str(n) + ")")
+            else:
+                file.write("P" + str(n) + ", ")
+        file.write("\nCHAPTER=")
+        file.write(str(chapter_pages))
+    
 #---------------------------------------------------------------------
 #   MAIN
 #---------------------------------------------------------------------
@@ -447,15 +478,14 @@ def BOOKTEXT_TO_IMAGE(font_file,
 font_file = r"C:\Users\jriffle\Documents\Demos\charmr\TrueTypeFonts\Serif_DejaVu.ttf"
 font_size = 40
 
-BOOKTEXT_TO_IMAGE(font_file, 
+BOOKTEXT_TO_QUICK_RENDER(font_file, 
             font_size, 
             side_margin=150, 
             top_margin=200, 
             leading=1.4, 
             indent=2, 
             file_type='.png',
-            chapter_numbering='roman', # can be 'roman' or 'decimal'
-            hyphenation='none'
+            chapter_numbering='roman' # can be 'roman' or 'decimal'
             )
 global start_time
 print(time.time() - start_time)
