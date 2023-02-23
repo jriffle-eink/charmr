@@ -57,7 +57,7 @@ class Controller:
         'main': self.send_main_menu_input,
         # 'slideshow': self.send_slideshow_input,
         # 'pause': self.send_pause_input,
-        # 'mainsettings': self.send-msettings_input
+        # 'mainsettings': self.send_msettings_input
         }
 
 

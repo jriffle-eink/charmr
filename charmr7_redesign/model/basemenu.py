@@ -25,9 +25,6 @@ class BaseMenu(ABC):
         # user-specified uncheck file
         self.uncheck_file = uncheck_file
 
-
-
-
     '''
     NOTE this is unchanged from the original code - I don't really know how it works so I am going to circle back later and try to
     simplify it.
