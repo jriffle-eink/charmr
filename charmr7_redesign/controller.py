@@ -2,7 +2,7 @@ import cmodule.charmr_module as cm
 import os
 import sys
 import signal
-import importlib
+import imp
 import time
 import math
 import subprocess
@@ -12,7 +12,7 @@ import threading
 from PIL import Image, ImageDraw, ImageFont, ImageEnhance
 from view import Display
 from mainapplication import DemoModel
-import utils
+import utils as utils
 from model.brightnesstemperaturemenu import BrightnessTemperatureMenu
 import model.basemenu
 from model.mainmenu import MainMenu
@@ -20,60 +20,62 @@ from model.slideshow import Slideshow
 
 
 '''
-This class is responsible for recieving user input. It will send input to the functionControl class, which will manipulate slideshow, 
-brightness, etc. as necessary. Any updates to the state of the program will be shown by the screenDisplay class.
-
-Parameters:
-program_model (functionControl) : responsible for deciding what to do with user input (modify slideshow, sketch, etc.)
-display (screenDisplay) : responsible for displaying any changes to the state of the program (changing slides, highlighting, etc.)
+This class is responsible for recieving user input. It monitors what appplication the user is currently on (main menu, slideshow, etc.), and sends
+the input to the appropriate application. It also sends commands to the display to display the appropriate application based on user input.
 
 '''
 
 class Controller:
 
-    global touch_dict
-    
-    touch_dict={
-            'brightness_button': [[0,1716], [215,1920]],
-            'temperature_button': [[215,1716], [420,1920]],
-            'sketch_button': [[.6910*cm.wsize,.8854*cm.hsize], [.8507*cm.wsize,1.000*cm.hsize]],
-            'settings_button': [[.8507*cm.wsize,.8854*cm.hsize], [1.000*cm.wsize,1.000*cm.hsize]],
-            'exit_button': [[.7743*cm.wsize,.1781*cm.hsize], [.8590*cm.wsize,.2417*cm.hsize]],
-            'back_button': [[.6736*cm.wsize,.1771*cm.hsize], [.7708*cm.wsize,.2396*cm.hsize]],
-            'slider': [[460,1730], [990,1850]]
-            }
-
 
     def __init__(self): 
-        #NULL CHECKS
-        self.touch_input = None
-        self.button_input = None
+        
+        # I think these are unnecessary - user input can be stored as local variables since they are constantly changing
+        # self.touch_input = None
+        # self.button_input = None
 
+        # responsible for monitoring the brightness/temperature of the demo
         self.bght_temp_menu = BrightnessTemperatureMenu()
 
+        # responsible for monitoring applications that can be launched from the main menu (currently, slideshows, sketch app, and main menu settings)
         self.main_menu = MainMenu()
 
-        self.wfm_transition_dict = {'dictionary of waveform transitions'}
-
-        self.current_application = 'main'
-
+        # responsible for displaying any changes to the demo (menus, slideshows, etc.)
         self.display = Display()
 
+        # to be implemented
+        self.wfm_transition_dict = {'dictionary of waveform transitions'}
+
+        # monitors the application the user is currently working with so user input can be processed appropriately
+        self.current_application = 'main'
+
+        # to be implemented - easier way to send user input to the appropriate input processing method
+        # ideally - self.components[self.current_application](user_input) -> to process user input - no need for a big if/else
+        # statement to figure out which method to send input to
+
         self.components={
-        'main': self.send_menu_input,
+        'main': self.send_main_menu_input,
         # 'slideshow': self.send_slideshow_input,
         # 'pause': self.send_pause_input,
         # 'mainsettings': self.send-msettings_input
-
-    }
-      
-
-      # slideshow is a component of the controller and not the model because it is very view-heavy (all it does is change display UNLESS pause is pressed)
-      # main menu serves as a setup for appropriate apps, however, does not control each application -> control of each application is independendt of main menu
-      # so that we are not tied to a single main menu
+        }
 
 
-    # Waits for user input
+        # dictionary of touch zones for different applications to allow for easy lookup
+        self.touch_dict={
+        'brightness_button': [[0,1716], [215,1920]],
+        'temperature_button': [[215,1716], [420,1920]],
+        'sketch_button': [[.6910*cm.wsize,.8854*cm.hsize], [.8507*cm.wsize,1.000*cm.hsize]],
+        'settings_button': [[.8507*cm.wsize,.8854*cm.hsize], [1.000*cm.wsize,1.000*cm.hsize]],
+        'exit_button': [[.7743*cm.wsize,.1781*cm.hsize], [.8590*cm.wsize,.2417*cm.hsize]],
+        'back_button': [[.6736*cm.wsize,.1771*cm.hsize], [.7708*cm.wsize,.2396*cm.hsize]],
+        'slider': [[460,1730], [990,1850]]
+        }
+
+
+    '''
+    Waits for user input. When input is recieved, sends input to correct processing function based on what the current application is.
+    ''' 
     def run(self):
         while True:
             user_input = get_input()
@@ -96,6 +98,11 @@ class Controller:
             elif type(user_input) == str or list:
                 func = self.components[self.current_application](user_input)
 
+    '''
+    Sets the current application to the appropriate settings. If the user is currently in the 'main' application, changes the current application to main settings 
+    ('msettings') and displays the appropriate screen by sending a command to the display class. If the user is currently in the 'pause' application, changes the 
+    current application to the pause settings ('psettings') and displays the appropriate screen.
+    '''
     def load_settings(self):
         if self.current_application == 'main':
             self.current_application = 'mainsettings'
@@ -104,24 +111,49 @@ class Controller:
             self.current_application = 'pausesettings'
             #self.display.display_psettings()
 
+    '''
+    Displays the temp/brightness slider and sends the user input to the BrightnessTemperatureSlider class to change the brightness/temperature on the device.
+    '''
     def load_slider(self, user_input):
         # figure out how to display check - in Jake's code it is tied up with buttons method
         #self.model.update_slider(user_input)
         self.bght_temp_menu.brightness_temperature_slider(user_input)
     
+    '''
+    Displays the 'brightness' label above the brightness/temperature slider and updates the BrightnessTemperatureMenu's current application so that any touches on the
+    slider will modify device brightness
+    '''
     def load_brightness(self):
         self.bght_temp_menu.select_type("bght")
         self.display.load_area(self.bght_temp_menu.directory + 'label_brightness.pgm', (616,1718))   
 
+    '''
+    Displays the 'temperature' label above the brightness/temperature slider and updates the BrightnessTemperatureMenu's current application so that any touches on the
+    slider will modify device temperature
+    '''
     def load_temperature(self):
         self.bght_temp_menu.select_type("temp")
         self.display.load_area(self.bght_temp_menu.directory + 'label_temperature.pgm', (616,1718))
 
+    '''
+    Sets the current application to be 'main' and sends a command to display to display the starup screen.
+    '''
     def load_startup(self):
         self.current_application = 'main'
         self.display.display_startup_screen()
 
-    def send_menu_input(self, user_input):
+    '''
+    Sets the current application to be 'pause' and sends a command to display to display the pause screen.
+    '''
+    def load_pause(self):
+        self.current_application = 'pause'
+        self.display.display_pause()  
+
+    '''
+    Sends user input to the main menu. Currently, users can select either a slideshow or the sketch app to be run. The main menu will return the application that
+    is selected, and the controller will either run and display the slideshow or run and display the sketch app.
+    '''
+    def send_main_menu_input(self, user_input):
         command = self.main_menu.process_input(user_input)
 
         app = self.main_menu.app_selector(command)
@@ -133,30 +165,43 @@ class Controller:
             self.slideshow_run(app)
         elif app is Sketch:
             self.current_application = 'sketch'
-            self.sketch_run(app)
+            self.sketch_run(app)                                                                                                                                                                                                                                                                     
 
-    def load_pause():
-        self.current_application = 'pause'
-        self.display.display_pause()                                                                                                                                                                                                                                                                       
-
-    def sketch_run(app):
+    '''
+    Sends a command to the main menu to run the sketch app, and sends a command to the display to display the sketch app.
+    '''
+    def sketch_run(self, sketch_app):
         self.main_menu.launch_sketch_app()
         self.display.display_sketch_app()
 
+    '''
+    Autoruns the slideshow. If no user input is recieved before the slide timeout, sends a command to the display to change the slide. Otherwise, processes the slideshow
+    input. If a 'QUIT' command is recieved from the slideshow input processing method, will terminate the slideshow autorun (essentially pausing the slideshow on the 
+    current slide)
+    '''
     def slideshow_run(self, slideshow):
-        while slideshow.cur_slide <  slideshow.length:
+        while slideshow.cur_slide < slideshow.length:
             user_input = self.get_input(t=slideshow.slide_timer())
 
             # no input before slide times out, automatically transition to next slide
             if user_input == None:
                 self.display.change_slide(slideshow, "next")
             else:
-                output = self.process_slideshow_input(user_input)
+                output = self.process_slideshow_input(slideshow, user_input)
 
                 # come up with something better. Right now, if user pauses process input will return QUIT signifying that autoplay of slideshow should end
                 if output == 'QUIT':
                     return
 
+    '''
+    Processes any user input recieved while a slideshow is running.
+    Tap touch (user_input is a list of touch coordinates)
+        - pause slideshow and load the appropriate pause screen
+    Swipe touch (user_input is a string)
+        - either changes slide or loads pause/main screen based on swipe direction
+    Button input (user_input is a string)
+        - either changes slide or loads pause screen based on swipe direction
+    '''
     def process_slideshow_input(self, slideshow, user_input):
         if type(user_input) == list: 
             slideshow.pause()
@@ -184,15 +229,19 @@ class Controller:
 
         self.display.change_slide(slideshow, direction) # LOADS AND DISPLAYS SLIDE
 
+    """
+    get_Input() waits indefintely for either a screen touch or a button press and returns global values 'button, touch'
+    If a button is pressed, returns as 'up', 'down' or 'enter'. Brightness button returns as None.
+    The screen can be either tapped or swiped.
+    If screen is tapped, returns as a tuple giving location of the tap.
+    If the screen is swiped, returns the direction of swipe as a string 'swipe left', 'swipe right', 'swipe up', or 'swipe down'
+    Optional argument t: Timeout feature. get_Input will wait for t milliseconds before exiting function and moving on
+
+    NOTE: This is directly lifted from original code - I want to work on streamlining and simplifying it if possible, however, we know it works right now
+    so I am going to focus on the rest of the redesign and get it up and running before I circle back.
+    """
     def get_input(swipe = None, t=None): # Optional t input is the timeout, meant for slideshow
-        """
-        get_Input() waits indefintely for either a screen touch or a button press and returns global values 'button, touch'
-        If a button is pressed, returns as 'up', 'down' or 'enter'. Brightness button returns as None.
-        The screen can be either tapped or swiped.
-            If screen is tapped, returns as a tuple giving location of the tap.
-            If the screen is swiped, returns the direction of swipe as a string 'swipe left', 'swipe right', 'swipe up', or 'swipe down'
-        Optional argument t: Timeout feature. get_Input will wait for t milliseconds before exiting function and moving on
-        """
+
         button = None; touch = None
 
         if t != None:
@@ -264,7 +313,3 @@ class Controller:
             button = None; touch = None
             button_proc.kill(); 
             if cm.touch: touchd_proc.kill()
-
-c = Controller()
-
-c.run()
