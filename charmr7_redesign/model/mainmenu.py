@@ -45,7 +45,7 @@ class MainMenu(BaseMenu):
         if int(arg) == 2: self.slideshow = Slideshow(cm.slideshow2)
         if int(arg) == 3: self.slideshow = Slideshow(cm.slideshow3)
         
-        #CHECK(menu.sshw, int(arg)-1, None, s_Check, s_Uncheck)
+    #     #CHECK(menu.sshw, int(arg)-1, None, s_Check, s_Uncheck)
 
     def app_selector(arg):
         slideshow_number = 1

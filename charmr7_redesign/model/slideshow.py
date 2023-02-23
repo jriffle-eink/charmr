@@ -6,15 +6,10 @@ import charmr_module as cm
 
 class Slideshow():
 
-    def __init__(self, arg):
+    def __init__(self, cm_slideshoow):
         self.cur_slide = 0
-
-        """
-        Changes the slideshow number to the number placed in argument
-        """    
-        if int(arg) == 1: self.cm_slideshow = cm.slideshow1
-        if int(arg) == 2: self.cm_slideshow = cm.slideshow2
-        if int(arg) == 3: self.cm_slideshow = cm.slideshow3
+        
+        self.cm_slideshow = cm.slideshow
 
         self.length = len(self.cm_slideshow.file)
 
