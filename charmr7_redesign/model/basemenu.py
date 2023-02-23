@@ -16,6 +16,7 @@ class BaseMenu(ABC):
         # menu options and currently selected element
         self.locations = locations
 
+        # the currently selected menu option
         self.cur_check = 0
 
         # user-specified check file
