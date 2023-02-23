@@ -7,7 +7,9 @@ sys.path.append('cmodule')
 import charmr_module as cm
 from PIL import Image, ImageDraw, ImageFont, ImageEnhance
 
-# Bottom menu bar, does not change between main and pause menus
+'''
+Abstraction of all common functionality between different menus (main menu, settings menu, etc.)
+'''
 class BaseMenu(ABC):
     def __init__(self, locations, check_file, uncheck_file):
 
@@ -16,12 +18,19 @@ class BaseMenu(ABC):
 
         self.cur_check = 0
 
+        # user-specified check file
         self.check_file = check_file
+
+        # user-specified uncheck file
         self.uncheck_file = uncheck_file
 
 
 
 
+    '''
+    NOTE this is unchanged from the original code - I don't really know how it works so I am going to circle back later and try to
+    simplify it.
+    '''
     def buttons(self, button_input):
         """
         Manages the button locations and button movements of all the menu lists.
@@ -50,8 +59,14 @@ class BaseMenu(ABC):
 
         utils.wait(100)
 
-    # this is for all kinds of menus
-    def menu_touch(self, touch) -> int:
+    '''
+    Takes in the touch location and determines which menu item was selected based on how many total menu items there are - unchanged from 
+    the original, but in the future I plan to not have max 5 menu options hardcoded so there can be an unlimited number of menu options.
+
+    RETURN
+    Menu item selected (int)
+    '''
+    def menu_touch(self, touch):
             x1 = math.ceil(.1944*cm.wsize); x2 = math.ceil(.7986*cm.wsize)
             if   len(self.locations) == 1:
                 if utils.touch_zone(touch, [[x1,math.ceil(.4219*cm.hsize)], [x2,math.ceil(.5260*cm.hsize)]]): return 1
@@ -74,6 +89,11 @@ class BaseMenu(ABC):
                 if utils.touch_zone(touch, [[x1,math.ceil(.5521*cm.hsize)], [x2,math.ceil(.6458*cm.hsize)]]): return 4
                 if utils.touch_zone(touch, [[x1,math.ceil(.6458*cm.hsize)], [x2,math.ceil(.7292*cm.hsize)]]): return 5
 
+    '''
+    Creates and saves the menu image file to be displayed for the specific menu, and determines the locations of the different options
+    on the menu depending on number of total options
+    NOTE this is unchanged from the original, going to come back and simplify it once the redesign is working and tested
+    '''
     def menu_build(self, menu_Type, name = "", items = []):
         
         if cm.wsize == 1440 and cm.hsize == 1920: 
