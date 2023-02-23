@@ -670,6 +670,7 @@ def F_wfm():
 # UTILITY FUNCTIONS #############################################################################################################################################
 #################################################################################################################################################################
 
+#X
 def APP_SELECTOR(arg):
     slideshow_number = 1
     app_List = [cm.app1, cm.app2, cm.app3, cm.app4, cm.app5]
@@ -680,6 +681,7 @@ def APP_SELECTOR(arg):
         elif app_List[i].form == 'sketch': 
             if    i+1 == arg: F_sketch('app')
 
+#X
 def AURORA(brt):  
     """
     Call this function with at least 1 argument to set the lighting brightness.
@@ -697,6 +699,7 @@ def AURORA(brt):
     
     menu.bght.check = brt/10 
     
+#X
 def AURORA_TEMP(temp):  
     """
     temp can be 0 to 9 (10 different temperatures)
@@ -735,7 +738,7 @@ def BUTTONS(MENU, disp = 'display', check_File = str(cm.check.file), uncheck_Fil
             subprocess.call('bs_load_img_area ' + str(cm.uncheck.rot) + " " + str(MENU.locations[0]) + " " + str(MENU.locations[1]) + " " + uncheck_File, shell = True)  
         if disp == 'display': DISPLAY(cm.check, 'part')
         return
-    
+    # basically this method makes the menu, checks the first option, then if a new option is selected unchecks the original option and checks the new option
     n = len(MENU.locations)
     array = [0]*n
     for i in range(n):
@@ -757,17 +760,19 @@ def BUTTONS(MENU, disp = 'display', check_File = str(cm.check.file), uncheck_Fil
     elif button == 'up': MENU.check = (MENU.check-1)%n
     button = False
     WAIT(100)
-    
+
+#X
 def BUTTON_BRIGHTNESS():
     LOAD_AREA(directory + 'label_brightness.pgm', (616,1718))   
     BUTTONS(bght, 'no display', directory + "check_brightness2.pgm", directory + "uncheck_brightness2.pgm")
     device.slide = 'bght'
 
+#X
 def BUTTON_TEMPERATURE():
-    LOAD_AREA(directory + 'label_temperature.pgm', (616,1718));
+    LOAD_AREA(directory + 'label_temperature.pgm', (616,1718))
     BUTTONS(temp, 'no display', directory + "check_brightness2.pgm", directory + "uncheck_brightness2.pgm")
     device.slide = 'temp'
-
+#X
 def CHANGE_SLIDE(direction, style = None): # Moves to next slide of slideshow
     """
     Manages slide transitions and the display styles
@@ -863,6 +868,7 @@ def CHANGE_SLIDE(direction, style = None): # Moves to next slide of slideshow
             elif slideshow.wfm[N+prev] == wfm_Disp.text: DISPLAY(wfm_Disp.strd, slideshow.disp[N])
             elif slideshow.wfm[N+prev] == wfm_Disp.strd: DISPLAY(wfm_Disp.strd, slideshow.disp[N])        
     
+    #X
 def CHANGE_SLIDESHOW(arg):
     """
     Changes the slideshow number to the number placed in argument
@@ -875,7 +881,8 @@ def CHANGE_SLIDESHOW(arg):
     if int(arg) == 3: slideshow = cm.slideshow3
     
     CHECK(menu.sshw, int(arg)-1, None, s_Check, s_Uncheck);
-    
+
+#X
 def CHECK(MENU, new_Check=0, disp = None, check_File = cm.check.file, uncheck_File = cm.uncheck.file):
     """
     Changes the checkmark value in a menu list. Takes between 1 and 5 arguments.
@@ -919,6 +926,7 @@ def CLEAR(flsh, disp = 'full'):
         subprocess.call("bs_disp_" + disp + " 5", shell = True)
     elif flsh == 'none': pass
 
+#X
 def CLOCK(arg = "check"):
     if arg == "set": device.time = None
     sample_Time = datetime.datetime.now() + datetime.timedelta(hours=11, minutes=6, seconds=33) # The controller clock isn't correct, needs an offset 
