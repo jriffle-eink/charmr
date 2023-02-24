@@ -11,7 +11,6 @@ import datetime
 import threading
 from PIL import Image, ImageDraw, ImageFont, ImageEnhance
 from view import Display
-from mainapplication import DemoModel
 import utils as utils
 from model.brightnesstemperaturemenu import BrightnessTemperatureMenu
 import model.basemenu

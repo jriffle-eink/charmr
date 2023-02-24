@@ -1,4 +1,4 @@
-from abc import ABC
+
 
 import sys
 
@@ -10,7 +10,7 @@ from PIL import Image, ImageDraw, ImageFont, ImageEnhance
 '''
 Abstraction of all common functionality between different menus (main menu, settings menu, etc.)
 '''
-class BaseMenu(ABC):
+class BaseMenu():
     def __init__(self, locations, check_file, uncheck_file):
 
         # menu options and currently selected element
