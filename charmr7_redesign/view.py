@@ -1,9 +1,8 @@
 import cmodule.charmr_module as cm
-from model import basemenu
+import model.basemenu
 import os
 import sys
 import signal
-import importlib
 import time
 import math
 import subprocess
@@ -23,7 +22,7 @@ class Display():
         if cm.wsize == 1264 and cm.hsize == 1680: 
             self.directory = '/mnt/mmc/images/charmr/1264x1680/'
 
-        self.wfm_disp = {
+        self.wfm_disp = { # we should make this a json file to import so it's easily accessible for changes
             'init': 0,
             'text': 3,
             'fast': 4,
@@ -75,10 +74,11 @@ class Display():
         elif flsh == 'none': pass
 
     def display_startup_screen(self):
-        self.clear('best') 
-    
+
+        self.clear('best')
+
         self.load(self.directory + "tmp_mainmenu.pgm", 1)  
-        self.display_clock("load")
+        #self.display_clock("load")
         # BUTTONS(main, 'no display')      
         self.load_area(cm.banner.file, cm.banner.rot, (0,80))
         
@@ -235,9 +235,11 @@ class Display():
         subprocess.call("/mnt/mmc/api/tools/cmder /mnt/mmc/api/tools/tmp.txt", shell=True)
 
     def load(self, img, rot=1):
-        #global rotation_Current
         self.rotation_Current = rot
-        subprocess.call('bs_load_img ' + str(rot) + ' ' + str(img), shell = True)
+        print('bs_load_img ' + str(rot) + ' ' + str(img))
+        #os.system('bs_load_img ' + str(rot) + ' ' + str(img))
+        subprocess.call('bs_load_img ' + str(rot) + ' ' + str(img), shell = True, close_fds=True)
+        print("called")
 
     def load_area(self, img, rot, pos):
         X = ' '; SSX = cm.hsize; SSY = cm.wsize
@@ -526,7 +528,7 @@ class Display():
         if device.sect == 'psettings': # coming back from psettings menu
             self.load(slideshow) # Reload the slideshow slide #N
             self.display(slideshow, 'part') #Redisplay the background slideshow     
-        device.sect = 'pause'
+        self.current_application = 'pause'
         
         if slideshow.wfm[N] == 3:
             self.load(self.directory + "pause_highlight2.pgm")
@@ -537,10 +539,10 @@ class Display():
         self.load_area(tmp, (3,0))
 
         if   device.slide == 'bght':
-            LOAD_AREA(directory + 'label_brightness.pgm', (616,1718))   
+            self.load_area(directory + 'label_brightness.pgm', (616,1718))   
             BUTTONS(bght, 'no display', directory + "check_brightness2.pgm", directory + "uncheck_brightness2.pgm") 
         elif device.slide == 'temp':
-            LOAD_AREA(directory + 'label_temperature.pgm', (616,1718))   
+            self.load_area(directory + 'label_temperature.pgm', (616,1718))   
             BUTTONS(temp, 'no display', directory + "check_brightness2.pgm", directory + "uncheck_brightness2.pgm") 
         
         # ----- DISPLAYING PAUSE CONTENT ------------
@@ -573,9 +575,59 @@ class Display():
                 if button == 'enter': break
                 if button == 'up':    CHANGE_SLIDE("back", slideshow.styl); break
                 if button == 'down':  CHANGE_SLIDE("next", slideshow.styl); break
+            
+    def window_header(text):
+        header = TEXT_TO_IMAGE(text, 'Sans_ZagReg.otf', 60, self.directory + "blank_window_header.pgm")
+        self.load_area(header, 1, (250,368)) 
 
-    def display_msettings(self):
-        pass
+    def display_msettings():
+        import Controller.get_input as get_input
+        
+        items = ['Go to slide', 
+                 'Wfm mode #s',
+                 'Demo mode',
+                 'Restart']
+  
+        basemenu.menu_build(self, "menu", "mainsettings", items)
+
+        # ----- LOADING CONTENT ------------
+        self.load(directory + "tmp_mainsettings.pgm")  
+        self.window_header('Main settings')
+        self.change_checkmarked_option(mset)
+        
+        # ----- WAITING FOR INPUT ----------
+        while True:  
+            basemenu.buttons(user_input)
+            user_input = get_input()
+            # ----- DISPLAYING BUTTONS AND OTHER CONTENT IF NOT YET LOADED
+
+        
+            if touch:# Touch takes priority over button, so listed before 'if select:'   
+                command = MENU_TOUCH(mset) 
+                if   command == 1: command = F_gotoslide()
+                elif command == 2: command = F_wfm()
+                elif command == 3: COMMAND("kill python charmr.py; python charmr_demo.py", "sub")
+                elif command == 4: COMMAND("kill python charmr.py; python charmr.py", "sub")
+                
+                elif TOUCH_ZONE(TOUCH_DICT['slider']): # BRIGHTNESS/TEMP SLIDER
+                    if   device.slide == 'bght': F_brightness()
+                    elif device.slide == 'temp': F_temperature()
+                elif TOUCH_ZONE(TOUCH_DICT['brightness_button']): BUTTON_BRIGHTNESS('display')
+                elif TOUCH_ZONE(TOUCH_DICT['temperature_button']): BUTTON_TEMPERATURE('display')      
+                elif TOUCH_ZONE(TOUCH_DICT['settings_button']): F_main()
+                elif TOUCH_ZONE(TOUCH_DICT['exit_button']): F_main()
+                else: F_main()
+                
+            elif select:
+                if   mset.check == 0: command = F_gotoslide()
+                elif mset.check == 1: command = F_wfm()
+                elif mset.check == 2: COMMAND("kill python charmr.p7; python charmr_demo.py", "sub")
+                elif mset.check == 3: COMMAND("kill python charmr.py; python mcharmr.py", "sub") 
+                
+            else: command = None
+            
+            if   command == 'exit': F_main()
+            elif command == 'back': F_msettings()
 
     def display_psettings(self):
         pass

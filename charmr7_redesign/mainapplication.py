@@ -2,7 +2,6 @@ import charmr_module as cm
 import os
 import sys
 import signal
-import importlib;
 import time
 import math
 import subprocess
@@ -36,6 +35,6 @@ class DemoModel():
     # #low-level system monitoring
     # self.device_monitoring = None
 
-    def update_slider(user_input: list):
-        self.bght_temp_menu.brightness_temperature_slider(user_input)
+    # def update_slider(user_input: list):
+    #     self.bght_temp_menu.brightness_temperature_slider(user_input)
 
