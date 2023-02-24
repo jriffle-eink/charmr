@@ -1,5 +1,5 @@
-from abc import ABC
-
+from abc import ABCMeta as ABC
+import math
 import sys
 
 sys.path.append('cmodule')
@@ -7,28 +7,22 @@ sys.path.append('cmodule')
 import charmr_module as cm
 from PIL import Image, ImageDraw, ImageFont, ImageEnhance
 
-'''
-Abstraction of all common functionality between different menus (main menu, settings menu, etc.)
-'''
-class BaseMenu(ABC):
+# Bottom menu bar, does not change between main and pause menus
+class BaseMenu(object):
+    __metaclass__ = ABC
+    
     def __init__(self, locations, check_file, uncheck_file):
 
         # menu options and currently selected element
         self.locations = locations
 
-        # the currently selected menu option
+        #the current menu type
+
         self.cur_check = 0
 
-        # user-specified check file
         self.check_file = check_file
-
-        # user-specified uncheck file
         self.uncheck_file = uncheck_file
 
-    '''
-    NOTE this is unchanged from the original code - I don't really know how it works so I am going to circle back later and try to
-    simplify it.
-    '''
     def buttons(self, button_input):
         """
         Manages the button locations and button movements of all the menu lists.
@@ -52,47 +46,36 @@ class BaseMenu(ABC):
         elif button_input == 'enter': select = self.cur_check # Enter/pause button
         # In this new matrix, the column # is the new button to be checked, while the row # is the previously checked location
 
-        if   button == 'down': self.cur_check = (self.cur_check+1)%n
-        elif button == 'up': self.cur_check = (self.cur_check-1)%n
+        if   button_input == 'down': self.cur_check = (self.cur_check+1)%n
+        elif button_input == 'up': self.cur_check = (self.cur_check-1)%n
 
-        utils.wait(100)
+        utils.wait(20)
 
-    '''
-    Takes in the touch location and determines which menu item was selected based on how many total menu items there are - unchanged from 
-    the original, but in the future I plan to not have max 5 menu options hardcoded so there can be an unlimited number of menu options.
+    # this is for all kinds of menus
+    def menu_touch(self, touch): #-> int:
+        x1 = math.ceil(.1944*cm.wsize); x2 = math.ceil(.7986*cm.wsize)
+        if   len(self.locations) == 1:
+            if utils.touch_zone(touch, [[x1,math.ceil(.4219*cm.hsize)], [x2,math.ceil(.5260*cm.hsize)]]): return 1
+        elif len(self.locations) == 2:
+            if utils.touch_zone(touch, [[x1,math.ceil(.3281*cm.hsize)], [x2,math.ceil(.4375*cm.hsize)]]): return 1
+            if utils.touch_zone(touch, [[x1,math.ceil(.5313*cm.hsize)], [x2,math.ceil(.6458*cm.hsize)]]): return 2       
+        elif len(self.locations) == 3:
+            if utils.touch_zone(touch, [[x1,math.ceil(.2969*cm.hsize)], [x2,math.ceil(.4010*cm.hsize)]]): return 1
+            if utils.touch_zone(touch, [[x1,math.ceil(.4323*cm.hsize)], [x2,math.ceil(.5417*cm.hsize)]]): return 2
+            if utils.touch_zone(touch, [[x1,math.ceil(.5729*cm.hsize)], [x2,math.ceil(.6771*cm.hsize)]]): return 3
+        elif len(self.locations) == 4:
+            if utils.touch_zone(touch, [[x1,math.ceil(.2917*cm.hsize)], [x2,math.ceil(.3958*cm.hsize)]]): return 1
+            if utils.touch_zone(touch, [[x1,math.ceil(.3958*cm.hsize)], [x2,math.ceil(.5104*cm.hsize)]]): return 2
+            if utils.touch_zone(touch, [[x1,math.ceil(.5104*cm.hsize)], [x2,math.ceil(.6250*cm.hsize)]]): return 3
+            if utils.touch_zone(touch, [[x1,math.ceil(.6250*cm.hsize)], [x2,math.ceil(.7292*cm.hsize)]]): return 4  
+        elif len(self.locations) == 5:
+            if utils.touch_zone(touch, [[x1,math.ceil(.2708*cm.hsize)], [x2,math.ceil(.3593*cm.hsize)]]): return 1
+            if utils.touch_zone(touch, [[x1,math.ceil(.3593*cm.hsize)], [x2,math.ceil(.4583*cm.hsize)]]): return 2
+            if utils.touch_zone(touch, [[x1,math.ceil(.4583*cm.hsize)], [x2,math.ceil(.5521*cm.hsize)]]): return 3
+            if utils.touch_zone(touch, [[x1,math.ceil(.5521*cm.hsize)], [x2,math.ceil(.6458*cm.hsize)]]): return 4
+            if utils.touch_zone(touch, [[x1,math.ceil(.6458*cm.hsize)], [x2,math.ceil(.7292*cm.hsize)]]): return 5
 
-    RETURN
-    Menu item selected (int)
-    '''
-    def menu_touch(self, touch):
-            x1 = math.ceil(.1944*cm.wsize); x2 = math.ceil(.7986*cm.wsize)
-            if   len(self.locations) == 1:
-                if utils.touch_zone(touch, [[x1,math.ceil(.4219*cm.hsize)], [x2,math.ceil(.5260*cm.hsize)]]): return 1
-            elif len(self.locations) == 2:
-                if utils.touch_zone(touch, [[x1,math.ceil(.3281*cm.hsize)], [x2,math.ceil(.4375*cm.hsize)]]): return 1
-                if utils.touch_zone(touch, [[x1,math.ceil(.5313*cm.hsize)], [x2,math.ceil(.6458*cm.hsize)]]): return 2       
-            elif len(self.locations) == 3:
-                if utils.touch_zone(touch, [[x1,math.ceil(.2969*cm.hsize)], [x2,math.ceil(.4010*cm.hsize)]]): return 1
-                if utils.touch_zone(touch, [[x1,math.ceil(.4323*cm.hsize)], [x2,math.ceil(.5417*cm.hsize)]]): return 2
-                if utils.touch_zone(touch, [[x1,math.ceil(.5729*cm.hsize)], [x2,math.ceil(.6771*cm.hsize)]]): return 3
-            elif len(self.locations) == 4:
-                if utils.touch_zone(touch, [[x1,math.ceil(.2917*cm.hsize)], [x2,math.ceil(.3958*cm.hsize)]]): return 1
-                if utils.touch_zone(touch, [[x1,math.ceil(.3958*cm.hsize)], [x2,math.ceil(.5104*cm.hsize)]]): return 2
-                if utils.touch_zone(touch, [[x1,math.ceil(.5104*cm.hsize)], [x2,math.ceil(.6250*cm.hsize)]]): return 3
-                if utils.touch_zone(touch, [[x1,math.ceil(.6250*cm.hsize)], [x2,math.ceil(.7292*cm.hsize)]]): return 4  
-            elif len(self.locations) == 5:
-                if utils.touch_zone(touch, [[x1,math.ceil(.2708*cm.hsize)], [x2,math.ceil(.3593*cm.hsize)]]): return 1
-                if utils.touch_zone(touch, [[x1,math.ceil(.3593*cm.hsize)], [x2,math.ceil(.4583*cm.hsize)]]): return 2
-                if utils.touch_zone(touch, [[x1,math.ceil(.4583*cm.hsize)], [x2,math.ceil(.5521*cm.hsize)]]): return 3
-                if utils.touch_zone(touch, [[x1,math.ceil(.5521*cm.hsize)], [x2,math.ceil(.6458*cm.hsize)]]): return 4
-                if utils.touch_zone(touch, [[x1,math.ceil(.6458*cm.hsize)], [x2,math.ceil(.7292*cm.hsize)]]): return 5
-
-    '''
-    Creates and saves the menu image file to be displayed for the specific menu, and determines the locations of the different options
-    on the menu depending on number of total options
-    NOTE this is unchanged from the original, going to come back and simplify it once the redesign is working and tested
-    '''
-    def menu_build(self, menu_Type, name = "", items = []):
+    def menu_build(self, menu_type, name = "", items = []):
         
         if cm.wsize == 1440 and cm.hsize == 1920: 
             directory = '/mnt/mmc/images/charmr/1440x1920/'
@@ -100,24 +83,24 @@ class BaseMenu(ABC):
             directory = '/mnt/mmc/images/charmr/1264x1680/'
         
         if   int(cm.wsize) == 1440 and int(cm.hsize) == 1920: 
-            if   menu_Type == 'main': 
+            if   menu_type == 'main': 
                 img = directory + "menu_main2.pgm"
                 if cm.app1.name != "": items.append(cm.app1.name)
                 if cm.app2.name != "": items.append(cm.app2.name)
                 if cm.app3.name != "": items.append(cm.app3.name)
                 if cm.app4.name != "": items.append(cm.app4.name)
                 if cm.app5.name != "": items.append(cm.app5.name)
-            elif menu_Type == 'menu': 
+            elif menu_type == 'menu': 
                 img = directory + "menu_reg.pgm"
         elif int(cm.wsize) == 1264 and int(cm.hsize) == 1680: 
-            if   menu_Type == 'main': 
+            if   menu_type == 'main': 
                 img = directory + "menu_main.pgm"
                 if cm.app1.name != "": items.append(cm.app1.name)
                 if cm.app2.name != "": items.append(cm.app2.name)
                 if cm.app3.name != "": items.append(cm.app3.name)
                 if cm.app4.name != "": items.append(cm.app4.name)
                 if cm.app5.name != "": items.append(cm.app5.name)
-            elif menu_Type == 'menu': 
+            elif menu_type == 'menu': 
                 img = directory + "menu_reg.pgm"        
         img = Image.open(img)
         I1 = ImageDraw.Draw(img)
@@ -155,4 +138,4 @@ class BaseMenu(ABC):
         menu = directory + "tmp" + name + ".pgm" 
         print("Saved to location: " + menu)
         img.save(menu)
-        return button_List 
+        return button_List, items 

@@ -1,11 +1,5 @@
-import charmr_module as cm
-
-# implementing pause and main settings menu individually first, then will abstractnout commonalities here
-class SettingsMenu(BaseMenu):
-    def __init__(self, check_file=str(cm.check.file), uncheck_file=str(cm.uncheck.file)):
-
-        super().__init__(locations=None, check_file=check_file, uncheck_file=uncheck_file)
-
+class Settings_Menu():
+    def __init__():
         self.slide_jump_menu = SlideJumpMenu()
         self.wfm_menu = WfmMenu()
 
