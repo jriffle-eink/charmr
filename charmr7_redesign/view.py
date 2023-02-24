@@ -12,6 +12,9 @@ import threading
 from PIL import Image, ImageDraw, ImageFont, ImageEnhance
 import utils
 
+'''
+This class is responsible for all visual renderings. The instrcutions for each display (main menu, pause, settings, slideshow) is broken up into distinct methods.
+'''
 class Display():
     def __init__(self): 
         self.rotation_Current = 1
@@ -46,16 +49,15 @@ class Display():
 
         self.display_startup_screen()
            
-    # have like a main screen that refreshes with a new menu, slide, etc. when necessary
 
-    # initialize to startup screen (main menu)
+    '''
+    Clears the current screen. Takes one of 5 arguments: 'slideshow', 'full', 'fast', 'strd', 'best', or 'none'
+    'slideshow': Manages clearing before the current slide in the slideshow, based on user specifications and recommendations
+    The other arguments can be user designated in the program or read from the charmr_module
+    Auto flash is set to 'norm' (standard display white flash)
+    ''' 
     def clear(self, flsh, disp = 'full'):
-        """
-        Clears the current screen. Takes one of 5 arguments: 'slideshow', 'full', 'fast', 'strd', 'best', or 'none'
-        'slideshow': Manages clearing before the current slide in the slideshow, based on user specifications and recommendations
-        The other arguments can be user designated in the program or read from the charmr_module
-        Auto flash is set to 'norm' (standard display white flash)
-        """ 
+
         if  flsh == 'full': 
             self.load(self.directory + 'white240.pgm'); 
             subprocess.call("bs_disp_" + disp + " 0", shell = True)    
@@ -73,29 +75,23 @@ class Display():
             subprocess.call("bs_disp_" + disp + " 5", shell = True)
         elif flsh == 'none': pass
 
+
+    '''
+    The screen displayed on launch. Currently, it is the main menu
+    '''
     def display_startup_screen(self):
 
         self.clear('best')
 
-        self.load(self.directory + "tmp_mainmenu.pgm", 1)  
-        #self.display_clock("load")
-        # BUTTONS(main, 'no display')      
-        self.load_area(cm.banner.file, cm.banner.rot, (0,80))
-        
-        if os.path.exists("tmp.txt"): 
-            os.remove("tmp.txt")
-        with open("tmp.txt", "w") as f: # Need cmder code to get all the main menu regions to display at once
-            f.write("SET_ROT 90 \n")
-            f.write("UPD_PART_AREA " + str(self.wfm_disp['text']))
-            f.write(" 0 " + str(int(math.floor(.00000*cm.hsize))) + " " + str(cm.wsize) + " " + str(int(math.floor(.04115*cm.hsize))) + "\n") # HEADER
-            f.write("UPD_PART_AREA " + str(self.wfm_disp['text']))
-            f.write(" 0 " + str(int(math.floor(.15625*cm.hsize))) + " " + str(cm.wsize) + " " + str(int(math.floor(.73750*cm.hsize))) + "\n") # BODY
-            f.write("UPD_PART_AREA " + str(self.wfm_disp['strd']))
-            f.write(" 0 " + str(int(math.floor(.89375*cm.hsize))) + " " + str(cm.wsize) + " " + str(int(math.floor(.10625*cm.hsize))) + "\n") # FOOTER
-            f.write("UPD_PART_AREA " + str(cm.banner.wfm))
-            f.write(" 0 " + str(int(math.floor(.04167*cm.hsize))) + " " + str(cm.wsize) + " " + str(int(math.floor(.11458*cm.hsize))) + "\n") # BANNER 
-        subprocess.call("/mnt/mmc/api/tools/cmder /mnt/mmc/api/tools/tmp.txt", shell=True)
+        self.display_main_menu()
 
+    '''
+    Changes the menu option that is displayed with a chekcmark, called when a user selects a new option
+
+    ARGUMENTS:
+    menu: BaseMenu (the menu the user is currently working with)
+    disp (optional): bool (whether or not the checkmark will be displayed)
+    '''
     def change_checkmarked_option(self, menu, disp=True):
         if type(menu.locations[0]) == int:
             if menu.cur_check == 1:
@@ -114,21 +110,21 @@ class Display():
         if disp: 
             self.display(cm.check, 'part')
 
-    def change_slide(self, slideshow, direction): #, style = None): # Moves to next slide of slideshow
-        """
-        Manages slide transitions and the display styles
-        The 'brains' of what type of transition, wfm, etc. should occur
+    '''
+    Manages slide transitions and the display styles
+    The 'brains' of what type of transition, wfm, etc. should occur
         
-        direction: Takes one of four arguments: int, 'next', or 'back', or 'remain'
-            int:      Integer number, moves to slide number int
-            'next':   Moves on to the next slide in the slideshow
-            'back':   Moves back one slide in the slideshow
-            'remain': Stays on the current slide
-        style: different style slide transitions
-            'swipe':      Creates a page-turn-like display from either left to right or right to left
-            'center'out': Displays images center-out radially. Must be a part-display, so a CLEAR() function is automatically integrated in
-            None:         Normal display
-        """
+    direction: Takes one of four arguments: int, 'next', or 'back', or 'remain'
+        int:      Integer number, moves to slide number int
+        'next':   Moves on to the next slide in the slideshow
+        'back':   Moves back one slide in the slideshow
+        'remain': Stays on the current slide
+    style: different style slide transitions
+        'swipe':      Creates a page-turn-like display from either left to right or right to left
+        'center'out': Displays images center-out radially. Must be a part-display, so a CLEAR() function is automatically integrated in
+        None:         Normal display
+    '''
+    def change_slide(self, slideshow, direction): #, style = None): # Moves to next slide of slideshow
 
         cm_info = slideshow.cm_slideshow
 
@@ -212,6 +208,9 @@ class Display():
                 elif slideshow.wfm[self.cur_slide+prev] == self.wfm_disp['text']: self.display(slideshow, self.wfm_disp['strd'], slideshow.disp[self.cur_slide])
                 elif slideshow.wfm[self.cur_slide+prev] == self.wfm_disp['strd']: self.display(slideshow, self.wfm_disp['strd'], slideshow.disp[self.cur_slide])           
 
+    '''
+    The main menu screen
+    '''
     def display_main_menu(self):
         self.clear("text")
 
@@ -234,6 +233,13 @@ class Display():
             f.write(" 0 " + str(int(math.floor(.04167*cm.hsize))) + " " + str(cm.wsize) + " " + str(int(math.floor(.11458*cm.hsize))) + "\n") # BANNER 
         subprocess.call("/mnt/mmc/api/tools/cmder /mnt/mmc/api/tools/tmp.txt", shell=True)
 
+    '''
+    Loads the given image.
+
+    ARGUMENTS
+    img: IMAGE (the image being loaded from the charmr module file)
+    rot (optional): int (rotation of image)
+    '''
     def load(self, img, rot=1):
         self.rotation_Current = rot
         print('bs_load_img ' + str(rot) + ' ' + str(img))
@@ -241,6 +247,14 @@ class Display():
         subprocess.call('bs_load_img ' + str(rot) + ' ' + str(img), shell = True, close_fds=True)
         print("called")
 
+    '''
+    Loads only a specified area of the screen with the given image.
+
+    ARGUMENTS
+    img: IMAGE (the image being loaded from the charmr module file)
+    rot: int (rotation of image)
+    pos: list(int, int) (where on the screen the image should be loaded)
+    '''
     def load_area(self, img, rot, pos):
         X = ' '; SSX = cm.hsize; SSY = cm.wsize
         if   str(rot) == '1':
@@ -252,6 +266,13 @@ class Display():
         elif str(rot) == '3': 
             subprocess.call('bs_load_img_area ' + str(rot) + ' ' + str(SSX - pos[0]) + ' ' + str(SSY - pos[1]) + ' ' + str(img), shell = True)
 
+    '''
+    Displays the given image.
+
+    ARGUMENTS
+    img: IMAGE (the image being displayed from the charmr module file)
+    method (optional): str (display type - cmder specification)
+    '''
     def display(self, cm_slideshow, method = 'full'):
         if isinstance(cm_slideshow, cm.IMAGE):
             if isinstance(cm_slideshow.wfm, list):
@@ -262,6 +283,19 @@ class Display():
         else: 
             utils.command('bs_disp_' + method + ' ' + str(wfm), 'sub')
 
+    '''
+    Turns the text string into an image file, then saves the image file and returns the filepath
+
+    ARGUMENTS
+    text_String: str (the text to be converted to an image)
+    font: str (the font of the text)
+    font_Size: str (the text size)
+    img_Blank: img (the blank image to write to)
+    offset (optional): list(int, int) (the text offset in the image)
+
+    RETURNS
+    tmp: str (the filepath of the image created)
+    '''
     def text_to_image(self, text_String, font, font_Size, img_Blank, offset = (10, 10)):
         img = Image.open(img_Blank)
         I1 = ImageDraw.Draw(img)
@@ -272,6 +306,9 @@ class Display():
         img.save(tmp)
         return tmp  
 
+    '''
+    Loads and displays the current time
+    '''
     def display_clock(self, arg = "check"):
         
         current_time = utils.clock()
@@ -286,21 +323,22 @@ class Display():
         if arg != "load":
             self.display(self.wfm_disp['text'], "part")
 
+    '''
+    Displays the images across the screen in the direction defined by the user.
+    The delay is the time in ms between each frame display on screen (16 frames set by fpga limit).
+        'direction': 'left' or 'right'
+        delay: any integer > 12
+    I have to call CMDER in order to execute this because that's the only way to get frames displaying simultaneously on the screen
+    *Only can be used when calling a slide from the charmr module. 
+    *It find the slide to display using the current slideshow and slide number N
+    Three display styles are available:
+        'regular': the image display swipes across the screen
+        'clear': a white clear swipes accross the screen immediately followed by an image swipe
+        'clear only': a white clear swipes accross the screen but the following image is displayed normally
+    The user can choose the wfm# used in clearing the image by entering a wfm# integer for 'clear_WFM'
+    '''
     def display_swipe(self, slideshow, direction, delay, style = 'reg', clear_WFM = None, image_WFM = None):
-        """
-        Displays the images across the screen in the direction defined by the user.
-        The delay is the time in ms between each frame display on screen (16 frames set by fpga limit).
-            'direction': 'left' or 'right'
-            delay: any integer > 12
-        I have to call CMDER in order to execute this because that's the only way to get frames displaying simultaneously on the screen
-        *Only can be used when calling a slide from the charmr module. 
-        *It find the slide to display using the current slideshow and slide number N
-        Three display styles are available:
-            'regular': the image display swipes across the screen
-            'clear': a white clear swipes accross the screen immediately followed by an image swipe
-            'clear only': a white clear swipes accross the screen but the following image is displayed normally
-        The user can choose the wfm# used in clearing the image by entering a wfm# integer for 'clear_WFM'
-        """
+
         #global N, i, iwidth, j, jwidth
 
         N = slideshow.cur_slide

@@ -6,8 +6,6 @@ class PauseSettingsMenu(BaseMenu):
 
         super().__init__(locations=None, check_file=check_file, uncheck_file=uncheck_file)
 
-        self.slide_jump_menu = SlideJumpMenu()
-        self.wfm_menu = WfmMenu()
 
         self.locations = self.menu_build('menu', '_psettings',
                               ['Go to slide', 
@@ -63,7 +61,7 @@ class PauseSettingsMenu(BaseMenu):
             ['flsh', 'best']: [[300,1100],   [510,1300]],
             ['flsh', 'strd']: [[510,1100],   [720,1300]],
             ['flsh', 'fast']: [[720,1100],   [930,1300]],
-            ['auto', auto_Opp]: [[930,1100],  [1140,1300]],
+            ['auto', 'auto_Opp']: [[930,1100],  [1140,1300]],
         }
 
     def process_input(self, user_input):
@@ -140,6 +138,7 @@ class PauseSettingsMenu(BaseMenu):
         #         #continue
 
     def F_wfm(self, slideshow, user_input):
+        pass
     # w_Check = directory + "check_bar.pgm"; w_Uncheck = directory + "uncheck_bar.pgm"
 
     # LOAD(directory + "menu_wfm.pgm")
@@ -151,15 +150,15 @@ class PauseSettingsMenu(BaseMenu):
     #         CHECK(menu.wfms, int(data), 'display', w_Check, w_Uncheck)
            
     #         GET_INPUT()
-            if touch:
-                if   TOUCH_ZONE([[300,900],    [510,1100]]): CHECK(menu.wfms, 0, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 0, 'slideshow');
-                elif TOUCH_ZONE([[510,900],    [720,1100]]): CHECK(menu.wfms, 1, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 1, 'slideshow');
-                elif TOUCH_ZONE([[720,900],    [930,1100]]): CHECK(menu.wfms, 2, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 2, 'slideshow');
-                elif TOUCH_ZONE([[930,900],   [1140,1100]]): CHECK(menu.wfms, 3, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 3, 'slideshow'); 
-                elif TOUCH_ZONE([[300,1100],   [510,1300]]): CHECK(menu.wfms, 4, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 4, 'slideshow');
-                elif TOUCH_ZONE([[510,1100],   [720,1300]]): CHECK(menu.wfms, 5, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 5, 'slideshow');
-                elif TOUCH_ZONE([[720,1100],   [930,1300]]): CHECK(menu.wfms, 6, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 6, 'slideshow');
-                elif TOUCH_ZONE([[930,1100],  [1140,1300]]): CHECK(menu.wfms, 7, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 7, 'slideshow');  
+            #if touch:
+                # if   TOUCH_ZONE([[300,900],    [510,1100]]): CHECK(menu.wfms, 0, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 0, 'slideshow');
+                # elif TOUCH_ZONE([[510,900],    [720,1100]]): CHECK(menu.wfms, 1, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 1, 'slideshow');
+                # elif TOUCH_ZONE([[720,900],    [930,1100]]): CHECK(menu.wfms, 2, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 2, 'slideshow');
+                # elif TOUCH_ZONE([[930,900],   [1140,1100]]): CHECK(menu.wfms, 3, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 3, 'slideshow'); 
+                # elif TOUCH_ZONE([[300,1100],   [510,1300]]): CHECK(menu.wfms, 4, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 4, 'slideshow');
+                # elif TOUCH_ZONE([[510,1100],   [720,1300]]): CHECK(menu.wfms, 5, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 5, 'slideshow');
+                # elif TOUCH_ZONE([[720,1100],   [930,1300]]): CHECK(menu.wfms, 6, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 6, 'slideshow');
+                # elif TOUCH_ZONE([[930,1100],  [1140,1300]]): CHECK(menu.wfms, 7, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 7, 'slideshow');  
 
 
         

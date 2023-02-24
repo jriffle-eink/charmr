@@ -1,5 +1,7 @@
 from basemenu import BaseMenu
 
+from pausesettingsmenu import PauseSettingsMenu
+
 import charmr_module as cm
 
 ''' 
@@ -10,7 +12,7 @@ class Pause():
 
         self.pause_settings = PauseSettingsMenu()
 
-        self.sketch = launch_pause_sketch()
+        #self.sketch = launch_pause_sketch()
 
         # pause screen specific touchzones - sketch and exit buttons
 
@@ -19,5 +21,3 @@ class Pause():
     '''
     def process_settings_input(self, user_input):
         pass
-
-p = PauseMenu()

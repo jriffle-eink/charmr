@@ -2,7 +2,7 @@ import sys
 import subprocess
 import numpy as np
 
-from .basemenu import BaseMenu
+from basemenu import BaseMenu
 
 sys.path.append('cmodule')
 
@@ -10,6 +10,9 @@ import charmr_module as cm
 
 import utils
 
+'''
+Controls the brightness and temperature settings of the demo
+'''
 class BrightnessTemperatureMenu(BaseMenu):
     def __init__(self, check_file="check_brightness2.pgm", uncheck_file="uncheck_brightness2.pgm"):
 
@@ -19,14 +22,27 @@ class BrightnessTemperatureMenu(BaseMenu):
         for i in range(10):
             self.locations = (476+(i*49), 1772)
 
-        super(BaseMenu, self).__init__()#locations_list, check_file, uncheck_file)
+        super(BrightnessTemperatureMenu, self).__init__()#locations_list, check_file, uncheck_file)
 
+        # The type of menu being worked with. If 'bght', the brightness of the demo nwill be modified by any given function. If 'temp', the
+        # temperature will be modified.
         self.cur_type = "bght"
 
+        # the current brightness/temp of the demo is stroed for easy access
         self.current_brightness = None
         self.current_temperature = None
 
 
+    '''
+    Will change the brightness/temperature of the demo and update the current_brightness/current_temperature field based on the cur_type.
+    If the touch location given is not within the brightness/temp touch zones, no change will be made.
+
+    ARGUMENTS
+    touch_location: list (x, y coordinates of user touch)
+    
+    RETURN
+    void
+    '''
     def brightness_temperature_slider(self, touch_location): 
         #used to be F_brightness/ F_temperature
         change = False
@@ -114,17 +130,30 @@ class BrightnessTemperatureMenu(BaseMenu):
             self.set_aurora_brightness(self.current_brightness)
         
 
-        #basically button display
+    '''
+    Setter for the cur_type field
+
+    ARGUMENTS
+    selected: str (desired type)
+
+    RETURN
+    void
+    '''
     def select_type(self, selected):
         if selected == "bght":
             self.cur_type = "bght"
         elif selected == "temp":
             self.cur_type = "temp"
 
-        # LOAD_AREA(directory + 'label_brightness.pgm', (616,1718))   
-        # BUTTONS(bght, 'no display', directory + "check_brightness2.pgm", directory + "uncheck_brightness2.pgm")
-        # device.slide = 'bght'
+    '''
+    Sets the brightness of the demo
 
+    ARGUMENTS
+    brt_val: int (desired brightness)
+
+    RETURN
+    void
+    '''
     def set_aurora_brightness(self, brt_val):
         #used to be AURORA(brt)
         """
@@ -142,6 +171,15 @@ class BrightnessTemperatureMenu(BaseMenu):
         
         #menu.bght.check = brt/10 
 
+    ''' 
+    Sets the temperature of the demo
+
+    ARGUMENTS
+    temp: int (desired temp)
+
+    RETURN
+    void
+    '''
     def set_aurora_temp(self, temp):
         #used to be AURORA_TEMP(temp) 
         """

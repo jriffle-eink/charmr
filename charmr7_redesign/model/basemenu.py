@@ -1,40 +1,40 @@
-<<<<<<< HEAD
-
-
-=======
 from abc import ABCMeta as ABC
 import math
->>>>>>> 70d2230c16c2052c8b99fe063bef9704ed5f96de
 import sys
-
+sys.path.append('.')
+import utils as utils
 sys.path.append('cmodule')
 
 import charmr_module as cm
 from PIL import Image, ImageDraw, ImageFont, ImageEnhance
 
-<<<<<<< HEAD
 '''
 Abstraction of all common functionality between different menus (main menu, settings menu, etc.)
+
+PARAMETERS
+locations: list (locations of menu options on the screen)
+check_file: str (the checkmark style the  menu will use)
+uncheck_file: str (the uncheck style the  menu will use)
 '''
-class BaseMenu():
-=======
-# Bottom menu bar, does not change between main and pause menus
 class BaseMenu(object):
     __metaclass__ = ABC
     
->>>>>>> 70d2230c16c2052c8b99fe063bef9704ed5f96de
     def __init__(self, locations, check_file, uncheck_file):
 
-        # menu options and currently selected element
         self.locations = locations
-
-        #the current menu type
 
         self.cur_check = 0
 
+        # the user-specified check file
         self.check_file = check_file
+
+        # the user-specified uncheck file
         self.uncheck_file = uncheck_file
 
+    '''
+    NOTE this is unchanged from the original code - I don't really know how it works so I am going to circle back later and try to
+    simplify it.
+    '''
     def buttons(self, button_input):
         """
         Manages the button locations and button movements of all the menu lists.
@@ -63,7 +63,16 @@ class BaseMenu(object):
 
         utils.wait(20)
 
-    # this is for all kinds of menus
+    '''
+    Takes in the touch location and determines which menu item was selected based on how many total menu items there are - unchanged from 
+    the original, but in the future I plan to not have max 5 menu options hardcoded so there can be an unlimited number of menu options.
+
+    ARGUMENTS
+    touch: list (the x, y coordinates of wwhere the user touched)
+
+    RETURN
+    Menu item selected (int)
+    '''
     def menu_touch(self, touch): #-> int:
         x1 = math.ceil(.1944*cm.wsize); x2 = math.ceil(.7986*cm.wsize)
         if   len(self.locations) == 1:
@@ -87,7 +96,22 @@ class BaseMenu(object):
             if utils.touch_zone(touch, [[x1,math.ceil(.5521*cm.hsize)], [x2,math.ceil(.6458*cm.hsize)]]): return 4
             if utils.touch_zone(touch, [[x1,math.ceil(.6458*cm.hsize)], [x2,math.ceil(.7292*cm.hsize)]]): return 5
 
-    def menu_build(self, menu_type, name = "", items = []):
+    
+    '''
+    Creates and saves the menu image file to be displayed for the specific menu, and determines the locations of the different options
+    on the menu depending on number of total options
+    NOTE this is unchanged from the original, going to come back and simplify it once the redesign is working and tested
+
+    ARGUMENTS
+    menu_type: str (what type of menu)
+    name (optional): str (the name of the menu)
+    items (optional): list (what menu items should be included in the menu)
+
+    RETURN
+    button_List: list (a list of menu item locations on demo screen)
+    items: list (a list of the menu items included in the menu in case one was not provided)
+    '''
+    def menu_build(self, menu_type, name = "", items = []): # -> list, list
         
         if cm.wsize == 1440 and cm.hsize == 1920: 
             directory = '/mnt/mmc/images/charmr/1440x1920/'

@@ -11,15 +11,19 @@ import datetime
 import threading
 from PIL import Image, ImageDraw, ImageFont, ImageEnhance
 
-def get_input(swipe = None, t=None): # Optional t input is the timeout, meant for slideshow
+
     """
     get_Input() waits indefintely for either a screen touch or a button press and returns global values 'button, touch'
     If a button is pressed, returns as 'up', 'down' or 'enter'. Brightness button returns as None.
     The screen can be either tapped or swiped.
-        If screen is tapped, returns as a tuple giving location of the tap.
-        If the screen is swiped, returns the direction of swipe as a string 'swipe left', 'swipe right', 'swipe up', or 'swipe down'
+    If screen is tapped, returns as a tuple giving location of the tap.
+    If the screen is swiped, returns the direction of swipe as a string 'swipe left', 'swipe right', 'swipe up', or 'swipe down'
     Optional argument t: Timeout feature. get_Input will wait for t milliseconds before exiting function and moving on
+    NOTE: This is directly lifted from original code - I want to work on streamlining and simplifying it if possible, however, we know it works right now
+    so I am going to focus on the rest of the redesign and get it up and running before I circle back.
     """
+def get_input(swipe = None, t=None): # Optional t input is the timeout, meant for slideshow
+
     button = None; touch = None
 
     if t != None:
@@ -91,7 +95,13 @@ def get_input(swipe = None, t=None): # Optional t input is the timeout, meant fo
         button_proc.kill(); 
         if cm.touch: touchd_proc.kill()
 
-def clock(arg = "check"):
+'''
+Calculates the current time.
+
+RETURN
+[current_Time, hour]: list(str, int) (the current time to be displayed, and the hour of the day)
+'''
+def clock():
     
     sample_Time = datetime.datetime.now() + datetime.timedelta(hours=11, minutes=6, seconds=33) # The controller clock isn't correct, needs an offset 
     if sample_Time.minute > 9:
@@ -111,19 +121,39 @@ def clock(arg = "check"):
 
     return [current_Time, hour]
 
+'''
+Calls the appropraite subprocess/os system call
 
+ARGUMENTS
+string: str (the string to be called)
+call: str (the type of call being made)
+'''
 def command(string, call):
     if   call == 'sub':   subprocess.call(string, shell = True)
     elif call == 'os':    os.system(string)
     elif call == 'Popen': subprocess.Popen(string, stdout=subprocess.PIPE, shell = True)
 
+'''
+Pauses the program for t milliseconds.
+
+ARGUMENTS
+t: int (amount of time in milliseconds to pause the program)
+'''
 def wait(t):
-    """
-    Pauses the program for t milliseconds
-    """
     time.sleep(t/1000)
 
-def touch_zone(touch, location): # Detects whether the touch was in a specific area
+'''
+Detects whether the touch was in the specified area, returns True if yes, else returns False
+
+ARGUMENTS
+touch: list (x, y coordinates of the user touch)
+location: list(tuple(int, int), tuple(int, int)) (The first tuple is the top left corner and second tuple is the bottom right corner of the touch zone, respectively).
+
+RETURNS
+True: bool (touch was in specified location)
+False: bool (touch was not in specified location)
+'''
+def touch_zone(touch, location): 
     """
     location is a list of size 2 of tuples of size 2.
     The first tuple is the top left corner and second tuple is the bottom right corner of the touch zone, respectively.

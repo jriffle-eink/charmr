@@ -1,7 +1,8 @@
 from basemenu import BaseMenu
-import mainmenu 
+
 import charmr_module as cm
 from view import Display
+import os
 
 class MainSettingsMenu(BaseMenu):
 
@@ -14,7 +15,7 @@ class MainSettingsMenu(BaseMenu):
         self.check_file = check_file
         self.uncheck_file = uncheck_file
         self.locations = self.menu_build("menu", '_mainmenu', self.items)
-        super(BaseMenu, self).__init__()
+        super(MainSettingsMenu, self).__init__()
 
         #self.settings = MainMenu() # pressing settings button again goes back to the main menu
         
@@ -22,12 +23,12 @@ class MainSettingsMenu(BaseMenu):
         
         self.display = Display()
     
-    def process_input(user_input):
+    def process_input(self, user_input):
         if type(user_input) == str: # Button pressed
                             
             if user_input in ['up', 'down']:
                 super().buttons(user_input) # change the buttons appropriately
-                self.display.change_checkmarked_option() 
+                #self.display.change_checkmarked_option() 
                 
             elif user_input == 'enter':
                 pass

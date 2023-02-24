@@ -4,34 +4,42 @@ sys.path.append('cmodule')
 
 import charmr_module as cm
 
+'''
+Responsible for monitoring the state of the slideshow
+
+PARAMETERS
+slideshow_num: int (which charmr module slideshow info should be used)
+'''
 class Slideshow():
 
-    def __init__(self, arg):
+    def __init__(self, slideshow_num):
+
+        # the current slide of the slideshow
         self.cur_slide = 0
 
         """
-        Changes the slideshow number to the number placed in argument
+        Changes the slideshow number to the number placed in argument.
         """    
-        if arg == 1: self.cm_slideshow = cm.slideshow1
-        if arg == 2: self.cm_slideshow = cm.slideshow2
-        if arg == 3: self.cm_slideshow = cm.slideshow3
 
+        '''
+        The charmr module slideshow is stored here for easy access to the slideshow information (waveform, rotation values, etc.)
+        '''
+        if slideshow_num == 1: self.cm_slideshow = cm.slideshow1
+        if slideshow_num == 2: self.cm_slideshow = cm.slideshow2
+        if slideshow_num == 3: self.cm_slideshow = cm.slideshow3
+
+        # the length of the slideshow (number of slides)
         self.length = len(self.cm_slideshow.file)
 
+        # to be implemented - pause management
         #self.pause_menu = PauseMenu()
 
-
-    # def setup(self, arg):
-    #     #def CHANGE_SLIDESHOW(arg):
-
-    #     # s_Check = self.directory + 'check_bar.pgm'; s_Uncheck = self.directory + 'uncheck_bar.pgm'    
-
-
-        
-    #     # CHECK(menu.sshw, int(arg)-1, None, s_Check, s_Uncheck)
-
-    #     self.slideshow_progression()
-
+    '''
+    Calculates the necessary slide timeout based on the waveform of the current slide.
+    
+    RETURNS
+    The slide timeout value (int)
+    '''
     def slide_timer(self): # This needs to be made into a json as well
         if str(self.cm_slideshow.wfm[self.cur_slide]) == '2': time_Added = 1024
         if str(self.cm_slideshow.wfm[self.cur_slide]) == '3': time_Added = 377
