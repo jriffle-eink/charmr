@@ -279,7 +279,7 @@ class Display():
                 wfm = cm_slideshow.wfm[N]
             else:
                 wfm = cm_slideshow.wfm   
-            utils.cpmmand('bs_disp_' + method + ' ' + str(wfm), 'sub')
+            utils.command('bs_disp_' + method + ' ' + str(wfm), 'sub')
         else: 
             utils.command('bs_disp_' + method + ' ' + str(wfm), 'sub')
 
@@ -597,28 +597,11 @@ class Display():
         tmp = "/mnt/mmc/application/sketch/tmp.pgm"    
         img.save(tmp)       
             
-        # ----- WAITING FOR INPUT ----------
-        while True:
-            GET_INPUT()
-            if touch:  
-                if   TOUCH_ZONE(TOUCH_DICT['slider']): 
-                    if   device.slide == 'bght': F_brightness()
-                    elif device.slide == 'temp': F_temperature()
-                elif TOUCH_ZONE(TOUCH_DICT['brightness_button']): BUTTON_BRIGHTNESS()
-                elif TOUCH_ZONE(TOUCH_DICT['temperature_button']): BUTTON_TEMPERATURE()   
-                elif TOUCH_ZONE(TOUCH_DICT['sketch_button']): F_sketch()
-                elif TOUCH_ZONE(TOUCH_DICT['settings_button']): F_psettings()
-                else: F_slideshow(menu.sshw.check+1, N-1)
-            if button:
-                if button == 'enter': break
-                if button == 'up':    CHANGE_SLIDE("back", slideshow.styl); break
-                if button == 'down':  CHANGE_SLIDE("next", slideshow.styl); break
-            
     def window_header(text):
         header = TEXT_TO_IMAGE(text, 'Sans_ZagReg.otf', 60, self.directory + "blank_window_header.pgm")
         self.load_area(header, (250,368)) 
 
-    def display_msettings():
+    def display_msettings(self):
         import Controller.get_input as get_input
         
         items = ['Go to slide', 
@@ -669,7 +652,77 @@ class Display():
 
     def display_psettings(self):
         pass
+    def display_psetting_submenu(self, cmd):
+
+        check = self.directory + "check_bar.pgm"; uncheck = self.directory + "uncheck_bar.pgm"
+        if cmd == 1:
+                        # ----- LOADING CONTENT ------------
+            self.load(self.directory + 'menu_gotoslide.pgm')  
+            self.window_header('Go-to-slide menu')  
+            self.get_slide((849, 617))
+            
+            img = Image.open(self.directory + "blank_gotoslide.pgm")
+            I1 = ImageDraw.Draw(img)
+            myFont = ImageFont.truetype(r"/mnt/mmc/images/charmr/TrueTypeFonts/Serif_DejaVu.ttf", 80)
+            I1.text((10, 10), slide, font=myFont, fill=0)
+                
+            img.save(self.directory + "tmp_gotoslide.pgm")
+            self.load_area(self.directory + 'tmp_gotoslide.pgm', (758, 743))  
+            
+            # what is this method I am so confused!
+            BUTTONS(menu.sshw, "display", check, uncheck)
+
+        elif cmd == 2:
+
+            self.load(self.directory + "menu_wfm.pgm")
+            self.window_header('Waveform menu')
     
+            data = GET_DATA('wfm', 'slideshow')
+            CHECK(menu.wfms, int(data), 'display', check, uncheck)
+
+        elif cmd == 3:
+            self.load(self.directory + "menu_rotation.pgm")
+            self.window_header('Rotation menu')
+    
+            data = GET_DATA('rot', 'slideshow')
+            
+            CHECK(menu.rot, int(data), 'display', check, r_Uncuncheckheck)
+
+
+        elif cmd == 4
+
+    def GET_DATA(data_Type, image):
+        """
+        Retrieves the user-specified data from the charmr module file.
+        data_Type: The type of data to be retrieved. 'wfm', 'rot' 'disp', etc.
+        image: The user specified image to take the data value from. 'banner', 'slideshow', 'startup', etc.
+        """
+        global slideshow
+        with open("charmr_module.py", "r") as f: # Opening file to read current wfm
+            lines = f.readlines()
+        for number1, line in enumerate(lines):
+            if image == 'slideshow': # This seems like and unneccessary way to access the data, but the module file updates before any reimport.
+                                    # Without reading through the file every time, the user would not see the updated value on the screen.
+                if line.find(str(slideshow.name) + "." + data_Type) == 0:
+                    data = line[len(str(slideshow.name) + "." + data_Type)+1:]
+                    data = data.replace('"', '').replace('\'', '')
+                    data = data.strip('[').replace(']', "").split(', ')
+                    data[len(data)-1] = data[len(data)-1].strip("\n")
+                    return data[N] 
+            else:
+                if line.find(image + "." + data_Type) == 0:
+                    data = line[len(str(image) + "." + data_Type)+1:]
+                    return data    
+
+    def display_area(self, WFM, pos1, pos2, rot=1): # pos1 is upper left coordinate tuple and pos2 is lower right coordinate tuple
+        if isinstance(WFM, cm.IMAGE):
+            if isinstance(WFM.wfm, list):
+                wfm = WFM.wfm[N]
+                rot = WFM.rot[N]
+            else: 
+                wfm = WFM.wfm  
+        else: wfm = WFM
+   
     #     self.clear("best")
 
     #     if slide_number >= 0:

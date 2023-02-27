@@ -99,7 +99,7 @@ class PauseSettingsMenu(BaseMenu):
             display.change_checkmarked_option()
 
             # use this to display the submenu (waveform, rotation, etc.)
-            display.display_psetting_submenu()
+            display.display_psetting_submenu(self.cur_check)
 
     def run_app(self, user_input, display):
         if self.cur_check == 1:
