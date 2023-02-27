@@ -12,16 +12,16 @@ import threading
 from PIL import Image, ImageDraw, ImageFont, ImageEnhance
 
 
-    """
-    get_Input() waits indefintely for either a screen touch or a button press and returns global values 'button, touch'
-    If a button is pressed, returns as 'up', 'down' or 'enter'. Brightness button returns as None.
-    The screen can be either tapped or swiped.
-    If screen is tapped, returns as a tuple giving location of the tap.
-    If the screen is swiped, returns the direction of swipe as a string 'swipe left', 'swipe right', 'swipe up', or 'swipe down'
-    Optional argument t: Timeout feature. get_Input will wait for t milliseconds before exiting function and moving on
-    NOTE: This is directly lifted from original code - I want to work on streamlining and simplifying it if possible, however, we know it works right now
-    so I am going to focus on the rest of the redesign and get it up and running before I circle back.
-    """
+"""
+get_Input() waits indefintely for either a screen touch or a button press and returns global values 'button, touch'
+If a button is pressed, returns as 'up', 'down' or 'enter'. Brightness button returns as None.
+The screen can be either tapped or swiped.
+If screen is tapped, returns as a tuple giving location of the tap.
+If the screen is swiped, returns the direction of swipe as a string 'swipe left', 'swipe right', 'swipe up', or 'swipe down'
+Optional argument t: Timeout feature. get_Input will wait for t milliseconds before exiting function and moving on
+NOTE: This is directly lifted from original code - I want to work on streamlining and simplifying it if possible, however, we know it works right now
+so I am going to focus on the rest of the redesign and get it up and running before I circle back.
+"""
 def get_input(swipe = None, t=None): # Optional t input is the timeout, meant for slideshow
 
     button = None; touch = None

@@ -10,7 +10,7 @@ import datetime
 import threading
 from PIL import Image, ImageDraw, ImageFont, ImageEnhance
 from view import Display
-import utils
+import utils as utils
 from model.brightnesstemperaturemenu import BrightnessTemperatureMenu
 import model.basemenu
 from model.mainmenu import MainMenu
@@ -40,6 +40,8 @@ class Controller:
         self.main_settings_menu = MainSettingsMenu()
         print('3')
 
+        self.slideshow = None
+
         # to be implemented
         self.wfm_transition_dict = {'dictionary of waveform transitions'}
         print('4')
@@ -57,7 +59,7 @@ class Controller:
         self.components={'main': self.send_menu_input,
                          'mainsettings': self.send_msettings_input, 
                          'slideshow': self.send_slideshow_input,
-                         'pause': self.send_pause_input,
+                         #'pause': self.send_pause_input,
                          'pausesettings': self.send_psettings_input
                          }
         print('7')
@@ -87,21 +89,37 @@ class Controller:
                     # these options can only be selected with touch (list)
                     if utils.touch_zone(user_input, self.touch_dict['slider']):
                         self.load_slider(user_input)
+
                     elif utils.touch_zone(user_input, self.touch_dict['brightness_button']): 
                         self.load_brightness()
+
                     elif utils.touch_zone(user_input, self.touch_dict['temperature_button']):
-                        self.load_temperature()          
+                        self.load_temperature()
+
+                    elif utils.touch_zone(user_input, self.touch_dict['sketch_button']):
+                         if self.current_application == 'pause' or 'pausesettings':
+                            self.load_sketch()
+
                     elif utils.touch_zone(user_input, self.touch_dict['settings_button']): 
                         if self.current_application == 'main' or 'pause':
                             self.load_settings()
+
                         elif self.current_application == 'mainsettings':
-                            self.current_application = 'main'
-                            self.main_menu()
-                        #elif self.current_application == 'pausesettings':
+                            self.load_main()
+
+                        elif self.current_application == 'pausesettings':
+                            self.load_pause()
 
             # these menu-specific options can be selected by buttons or touch
             elif type(user_input) == str or list:
                 func = self.components[self.current_application](user_input)
+
+    '''
+    Sets the current application to be the main menu and sends a command to display to load the appropriate screen.
+    '''
+    def load_main(self):
+        self.current_application = 'main'
+        self.display.display_main_menu()
 
     '''
     Sets the current application to the appropriate settings. If the user is currently in the 'main' application, changes the current application to main settings 
@@ -130,7 +148,7 @@ class Controller:
     '''
     def load_brightness(self):
         self.bght_temp_menu.select_type("bght")
-        self.display.load_area(self.bght_temp_menu.directory + 'label_brightness.pgm', (616,1718))   
+        self.display.load_area(self.display.directory + 'label_brightness.pgm', (616,1718))   
 
     '''
     Displays the 'temperature' label above the brightness/temperature slider and updates the BrightnessTemperatureMenu's current application so that any touches on the
@@ -138,7 +156,7 @@ class Controller:
     '''
     def load_temperature(self):
         self.bght_temp_menu.select_type("temp")
-        self.display.load_area(self.bght_temp_menu.directory + 'label_temperature.pgm', (616,1718))
+        self.display.load_area(self.display.directory + 'label_temperature.pgm', (616,1718))
 
     '''
     Sets the current application to be 'main' and sends a command to display to display the starup screen.
@@ -152,9 +170,31 @@ class Controller:
     is selected, and the controller will either run and display the slideshow or run and display the sketch app.
     '''
     def send_menu_input(self, user_input):
-        command = self.main_menu.process_input(user_input)
+        application = self.main_menu.process_input(user_input)
 
-        if command != None: command
+        if application != None: 
+            if type(application) == Slideshow:
+                self.current_application = 'slideshow'
+                
+                self.slideshow = application
+
+                self.slideshow_run()
+
+
+    def send_msettings_input(self, user_input):
+        pass
+
+    def send_slideshow_input(self, user_input):
+        pass
+
+    # def send_pause_input(self, user_input):
+    #     self.slideshow.process_pause_input(user_input)
+
+    def send_psettings_input(self, user_input):
+        self.slideshow.process_settings_input(user_input)
+
+        # USE THIS TO TAKE CARE OF DISPLAYING PAUSE SCREEN CHECKMARKED OPTIONS, ETC
+        self.display.update_pause_screen()
 
     '''
     Sets the current application to be 'pause' and sends a command to display to display the pause screen.
@@ -172,15 +212,15 @@ class Controller:
     input. If a 'QUIT' command is recieved from the slideshow input processing method, will terminate the slideshow autorun (essentially pausing the slideshow on the 
     current slide)
     '''
-    def slideshow_run(self, slideshow):
-        while slideshow.cur_slide <  slideshow.length:
-            user_input = utils.get_input(t=slideshow.slide_timer())
+    def slideshow_run(self):
+        while self.slideshow.cur_slide <  self.slideshow.length:
+            user_input = utils.get_input(t=self.slideshow.slide_timer())
 
             # no input before slide times out, automatically transition to next slide
             if user_input == None:
-                self.display.change_slide(slideshow, "next")
+                self.display.change_slide(self.slideshow, "next")
             else:
-                output = self.process_slideshow_input(user_input)
+                output = self.process_slideshow_input(self.slideshow, user_input)
 
                 # come up with something better. Right now, if user pauses process input will return QUIT signifying that autoplay of slideshow should end
                 if output == 'QUIT':
@@ -197,7 +237,6 @@ class Controller:
     '''
     def process_slideshow_input(self, slideshow, user_input):
         if type(user_input) == list: 
-            slideshow.pause()
             #direction = 'remain'
             self.load_pause()
 

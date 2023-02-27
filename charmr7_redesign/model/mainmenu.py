@@ -29,8 +29,6 @@ class MainMenu(BaseMenu):
         # the class responsible for monitoring sketch NOTE: might be unnecessary since sketch is built into demos and doesn't require much
         # external code
         #self.sketch = Sketch()
-                
-        self.display = Display()
     
     ''' 
     Launches the sketch app
@@ -51,13 +49,13 @@ class MainMenu(BaseMenu):
         """    
         #s_Check = directory + 'check_bar.pgm'; s_Uncheck = directory + 'uncheck_bar.pgm'    
 
-        self.slideshow = Slideshow(int(num))
+        return Slideshow(int(num))
 
         #CHECK(menu.sshw, int(arg)-1, None, s_Check, s_Uncheck)
         
 
     '''
-    Selects an appkication based on user input.
+    Selects an application based on user input.
 
     ARGUMENTS
     user_input: str or list (represnts either a button press (str) or tap touch (list))
@@ -107,9 +105,7 @@ class MainMenu(BaseMenu):
                         # auto_slideshow.run()
 
                         # sets up the selected slideshown and initiates automatic slide progression
-                    self.change_slideshow(arg)
-
-                    return self.slideshow
+                    return self.change_slideshow(arg)
 
                 else: slideshow_number += 1
 
@@ -117,3 +113,5 @@ class MainMenu(BaseMenu):
                 if i+1 == arg: 
                     pass
                     #return self.sketch
+
+

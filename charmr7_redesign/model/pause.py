@@ -14,8 +14,6 @@ class Pause():
 
         #self.sketch = launch_pause_sketch()
 
-        # pause screen specific touchzones - sketch and exit buttons
-
     '''
     Sends user input to the settings field to process
     '''

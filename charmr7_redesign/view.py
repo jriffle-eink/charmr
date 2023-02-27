@@ -217,7 +217,7 @@ class Display():
         self.load(self.directory + "tmp_mainmenu.pgm", 1)  
         self.display_clock("load")
         # BUTTONS(main, 'no display')      
-        self.load_area(cm.banner.file, cm.banner.rot, (0,80))
+        self.load_area(cm.banner.file, (0,80), cm.banner.rot)
         
         if os.path.exists("tmp.txt"): 
             os.remove("tmp.txt")
@@ -255,7 +255,7 @@ class Display():
     rot: int (rotation of image)
     pos: list(int, int) (where on the screen the image should be loaded)
     '''
-    def load_area(self, img, rot, pos):
+    def load_area(self, img, pos, rot=1):
         X = ' '; SSX = cm.hsize; SSY = cm.wsize
         if   str(rot) == '1':
             subprocess.call('bs_load_img_area ' + str(rot) +X+ str(pos[0]) +X+ str(pos[1]) +X+ str(img), shell = True)
@@ -317,9 +317,9 @@ class Display():
         elif cm.wsize == 1264: time_Written = self.text_to_image(current_time[0], "Sans_Monofonto.otf", 42, self.directory + "blank_time.pgm", (0,10))
         
         if current_time[1] < 10:
-            self.load_area(time_Written, 1, cm.area.clock[0])
+            self.load_area(time_Written, cm.area.clock[0])
         else: 
-            self.load_area(time_Written, 1, cm.area.clock[1])
+            self.load_area(time_Written, cm.area.clock[1])
         if arg != "load":
             self.display(self.wfm_disp['text'], "part")
 
@@ -616,7 +616,7 @@ class Display():
             
     def window_header(text):
         header = TEXT_TO_IMAGE(text, 'Sans_ZagReg.otf', 60, self.directory + "blank_window_header.pgm")
-        self.load_area(header, 1, (250,368)) 
+        self.load_area(header, (250,368)) 
 
     def display_msettings():
         import Controller.get_input as get_input

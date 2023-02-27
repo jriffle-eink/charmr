@@ -1,8 +1,10 @@
 import threading
+from pausesettingsmenu import PauseSettingsMenu
 import sys 
 sys.path.append('cmodule')
 
 import charmr_module as cm
+
 
 '''
 Responsible for monitoring the state of the slideshow
@@ -32,7 +34,8 @@ class Slideshow():
         self.length = len(self.cm_slideshow.file)
 
         # to be implemented - pause management
-        #self.pause_menu = PauseMenu()
+        self.pause_menu = PauseSettingsMenu()
+        
 
     '''
     Calculates the necessary slide timeout based on the waveform of the current slide.
@@ -52,3 +55,10 @@ class Slideshow():
             
             
 
+    '''
+
+    '''
+    def process_settings_input(self, user_input):
+        self.pause_menu.process_input(user_input)
+
+s = Slideshow(1)

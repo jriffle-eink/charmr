@@ -4,8 +4,6 @@ import charmr_module as cm
 class PauseSettingsMenu(BaseMenu):
     def __init__(self, check_file=str(cm.check.file), uncheck_file=str(cm.uncheck.file)):
 
-        super().__init__(locations=None, check_file=check_file, uncheck_file=uncheck_file)
-
 
         self.locations = self.menu_build('menu', '_psettings',
                               ['Go to slide', 
@@ -14,6 +12,12 @@ class PauseSettingsMenu(BaseMenu):
                                'Disp/Flsh',
                                'Main menu']
                                ) 
+
+        self.check_file = check_file
+        self.uncheck_file = uncheck_file
+
+        super(PauseSettingsMenu, self).__init__()#locations, check_file, uncheck_file)
+
 
         # used mainly for view purposes to know what items to display
         self.items = ['Go to slide', 'Waveform', 'Rotation', 'Disp/Flsh', 'Main menu']
@@ -67,6 +71,16 @@ class PauseSettingsMenu(BaseMenu):
     def process_input(self, user_input):
         cmd = self.menu_touch(user_input)
 
+        if cmd == 1:
+            self.go_to_slide()
+        elif cmd == 2:
+            self.wfm()
+        elif cmd == 3:
+            self.rotation()
+        elif cmd == 4:
+            self.dispflsh()
+        elif cmd == 5:
+            self.go_to_main()
         
     '''
     Returns user to main menu
