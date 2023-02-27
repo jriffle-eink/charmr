@@ -1,5 +1,6 @@
 from basemenu import BaseMenu
 import charmr_module as cm
+import utils as utils
 
 class PauseSettingsMenu(BaseMenu):
     def __init__(self, check_file=str(cm.check.file), uncheck_file=str(cm.uncheck.file)):
@@ -16,163 +17,142 @@ class PauseSettingsMenu(BaseMenu):
         self.check_file = check_file
         self.uncheck_file = uncheck_file
 
-        super(PauseSettingsMenu, self).__init__()#locations, check_file, uncheck_file)
+        super(PauseSettingsMenu, self).__init__(self.locations, check_file, uncheck_file)#locations, check_file, uncheck_file)
+
+        #self.cur_cmd = None
 
 
         # used mainly for view purposes to know what items to display
         self.items = ['Go to slide', 'Waveform', 'Rotation', 'Disp/Flsh', 'Main menu']
 
-        self.go_to_slide_touch_dict={
-            ['change slideshow', '1']: [[760,490],  [860,610]],
-            ['change slideshow', '2']: [[876,490],  [976,610]],
-            ['change slideshow', '3']: [[992,490], [1092,610]],
+        # these stay the same for all submenus, but are pause setting menu specific!
+        self.general_touch_dict={
+            'exit': [[.7743*cm.wsize,.1781*cm.hsize], [.8590*cm.wsize,.2417*cm.hsize]],
+            'back': [[.6736*cm.wsize,.1771*cm.hsize], [.7708*cm.wsize,.2396*cm.hsize]],
+        }
 
-            ['slide', '7']: [[440,940],  [627,1080]],
-            ['slide', '8']: [[627,940],  [813,1080]],
-            ['slide', '9']: [[813,940],  [1000,1080]],
-            ['slide', '4']: [[440,1080], [627,1220]],
-            ['slide', '5']: [[627,1080], [813,1220]],
-            ['slide', '6']: [[813,1080], [1000,1220]],
-            ['slide', '1']: [[440,1220], [627,1360]],
-            ['slide', '2']: [[627,1220], [813,1360]],
-            ['slide', '3']: [[813,1220], [1000,1360]],
-            ['slide', '0']: [[627,1360], [813,1500]],
+        self.go_to_slide_touch_dict={
+            tuple(['change slideshow', '1']): [[760,490],  [860,610]],
+            tuple(['change slideshow', '2']): [[876,490],  [976,610]],
+            tuple(['change slideshow', '3']): [[992,490], [1092,610]],
+
+            tuple(['slide', '7']): [[440,940],  [627,1080]],
+            tuple(['slide', '8']): [[627,940],  [813,1080]],
+            tuple(['slide', '9']): [[813,940],  [1000,1080]],
+            tuple(['slide', '4']): [[440,1080], [627,1220]],
+            tuple(['slide', '5']): [[627,1080], [813,1220]],
+            tuple(['slide', '6']): [[813,1080], [1000,1220]],
+            tuple(['slide', '1']): [[440,1220], [627,1360]],
+            tuple(['slide', '2']): [[627,1220], [813,1360]],
+            tuple(['slide', '3']): [[813,1220], [1000,1360]],
+            tuple(['slide', '0']): [[627,1360], [813,1500]],
+            tuple(['BACK', '-1']): [[440,1360], [627,1500]],
+            tuple(['ENTER', '0']): [[813,1360], [1000,1500]],
         }
 
         self.wfm_touch_dict={
-            ['wfm', '0']: [[300,900],    [510,1100]],
-            ['wfm', '1']: [[510,900],    [720,1100]],
-            ['wfm', '2']: [[720,900],    [930,1100]],
-            ['wfm', '3']: [[930,900],   [1140,1100]],
-            ['wfm', '4']: [[300,1100],   [510,1300]],
-            ['wfm', '5']: [[510,1100],   [720,1300]],
-            ['wfm', '6']: [[720,1100],   [930,1300]],
-            ['wfm', '7']: [[930,1100],  [1140,1300]],
+            tuple(['wfm', '0']): [[300,900],    [510,1100]],
+            tuple(['wfm', '1']): [[510,900],    [720,1100]],
+            tuple(['wfm', '2']): [[720,900],    [930,1100]],
+            tuple(['wfm', '3']): [[930,900],   [1140,1100]],
+            tuple(['wfm', '4']): [[300,1100],   [510,1300]],
+            tuple(['wfm', '5']): [[510,1100],   [720,1300]],
+            tuple(['wfm', '6']): [[720,1100],   [930,1300]],
+            tuple(['wfm', '7']): [[930,1100],  [1140,1300]],
         }
 
         self.rot_touch_dict={
-            ['rot', '0']: [[470,900],    [670,1100]],
-            ['rot', '1']: [[770,900],    [970,1100]],
-            ['rot', '2']: [[470,1200],   [670,1400]],
-            ['rot', '3']: [[770,1200],   [970,1400]],
+            tuple(['rot', '0']): [[470,900],    [670,1100]],
+            tuple(['rot', '1']): [[770,900],    [970,1100]],
+            tuple(['rot', '2']): [[470,1200],   [670,1400]],
+            tuple(['rot', '3']): [[770,1200],   [970,1400]],
         }
 
         self.disp_flsh_touch_dict={
-            ['disp', 'full']: [[300,900],    [510,1100]],
-            ['disp', 'part']: [[510,900],    [720,1100]],
-            ['flsh', 'none']: [[720,900],    [930,1100]],
-            ['flsh', 'full']: [[930,900],   [1140,1100]],
-            ['flsh', 'best']: [[300,1100],   [510,1300]],
-            ['flsh', 'strd']: [[510,1100],   [720,1300]],
-            ['flsh', 'fast']: [[720,1100],   [930,1300]],
-            ['auto', 'auto_Opp']: [[930,1100],  [1140,1300]],
+            tuple(['disp', 'full']): [[300,900],    [510,1100]],
+            tuple(['disp', 'part']): [[510,900],    [720,1100]],
+            tuple(['flsh', 'none']): [[720,900],    [930,1100]],
+            tuple(['flsh', 'full']): [[930,900],   [1140,1100]],
+            tuple(['flsh', 'best']): [[300,1100],   [510,1300]],
+            tuple(['flsh', 'strd']): [[510,1100],   [720,1300]],
+            tuple(['flsh', 'fast']): [[720,1100],   [930,1300]],
+            tuple(['auto', 'auto_Opp']): [[930,1100],  [1140,1300]],
         }
 
-    def process_input(self, user_input):
-        cmd = self.menu_touch(user_input)
+    def process_input(self, user_input, display):
 
-        if cmd == 1:
-            self.go_to_slide()
-        elif cmd == 2:
-            self.wfm()
-        elif cmd == 3:
-            self.rotation()
-        elif cmd == 4:
-            self.dispflsh()
-        elif cmd == 5:
+        if self.cur_check != 0:
+
+            if utils.touch_zone(user_input, self.general_touch_dict['exit']):
+                self.cur_check = 0
+                return 'pause'
+
+            elif utils.touch_zone(user_input, self.general_touch_dict['back']):
+                self.cur_check = 0
+                display.display_psettings()
+
+            else: 
+                return self.run_app(user_input, display)
+        else:
+            self.cur_check = self.menu_touch(user_input)
+
+            display.change_checkmarked_option()
+
+            # use this to display the submenu (waveform, rotation, etc.)
+            display.display_psetting_submenu()
+
+    def run_app(self, user_input, display):
+        if self.cur_check == 1:
+            self.go_to_slide(user_input, display)
+        elif self.cur_check == 2:
+            self.wfm(user_input, display)
+        elif self.cur_check == 3:
+            self.rotation(user_input, display)
+        elif self.cur_check == 4:
+            self.dispflsh(user_input, display)
+        elif self.cur_check == 5:
             self.go_to_main()
         
     '''
     Returns user to main menu
     '''
     def go_to_main(self):
+        # reset current command
+        self.cur_check = 0
         return 'main'
 
-    def go_to_slide(self, slideshow, user_input):
-        #def F_gotoslide():
-    
-    # # ----- LOADING CONTENT ------------    should be in view!!!!
-    # LOAD(directory + 'menu_gotoslide.pgm', 1)  
-    # WINDOW_HEADER('Go-to-slide menu')  
-    # GET_SLIDE((849, 617))
-        slide = ""   
-    
-    #while True:        
+    def go_to_slide(self, user_input, display):
+        for elem in self.go_to_slide_touch_dict:
 
-        # s_Check = directory + "check_bar.pgm"; s_Uncheck = directory + "uncheck_bar.pgm"
-        # BUTTONS(menu.sshw, "no display", s_Check, s_Uncheck)
+            if utils.touch_zone(user_input, self.go_to_slide_touch_dict[elem]):
 
-        # img = Image.open(directory + "blank_gotoslide.pgm")
-        # I1 = ImageDraw.Draw(img)
-        # myFont = ImageFont.truetype(r"/mnt/mmc/images/charmr/TrueTypeFonts/Serif_DejaVu.ttf", 80)
-        # I1.text((10, 10), slide, font=myFont, fill=0)
-        
-        # img.save(directory + "tmp_gotoslide.pgm")
-        # LOAD_AREA(directory + 'tmp_gotoslide.pgm', 1, (758, 743))        
-        # DISPLAY(wfm_Disp.text, 'part')
-        
-        # for cmd in self.go_to_slide_touch_dict:
-        #     if utils.touch_zone(user_input, touch_dict[cmd]):
-        #         return cmd
+                display.go_to_slide_display()
 
-        # if touch:
+                return elem
 
-        #     utils.touch_zone(user_input, touch_dict[])
-        #     if   TOUCH_ZONE([760,490],  [860,610]):   CHECK(menu.sshw, 0, None, s_Check, s_Uncheck); CHANGE_SLIDESHOW(1); GET_SLIDE((849, 617))
-        #     elif TOUCH_ZONE([876,490],  [976,610]):   CHECK(menu.sshw, 1, None, s_Check, s_Uncheck); CHANGE_SLIDESHOW(2); GET_SLIDE((849, 617))
-        #     elif TOUCH_ZONE([992,490], [1092,610]):   CHECK(menu.sshw, 2, None, s_Check, s_Uncheck); CHANGE_SLIDESHOW(3); GET_SLIDE((849, 617))
+    def wfm(self, user_input, display):
+        for elem in self.wfm_touch_dict:
 
-        #     elif TOUCH_ZONE([440,940],  [627,1080]):  slide = slide + '7'
-        #     elif TOUCH_ZONE([627,940],  [813,1080]):  slide = slide + '8'
-        #     elif TOUCH_ZONE([813,940],  [1000,1080]): slide = slide + '9'
-        #     elif TOUCH_ZONE([440,1080], [627,1220]):  slide = slide + '4' 
-        #     elif TOUCH_ZONE([627,1080], [813,1220]):  slide = slide + '5'  
-        #     elif TOUCH_ZONE([813,1080], [1000,1220]): slide = slide + '6' 
-        #     elif TOUCH_ZONE([440,1220], [627,1360]):  slide = slide + '1'
-        #     elif TOUCH_ZONE([627,1220], [813,1360]):  slide = slide + '2' 
-        #     elif TOUCH_ZONE([813,1220], [1000,1360]): slide = slide + '3'
-        #     elif TOUCH_ZONE([627,1360], [813,1500]):  slide = slide + '0'
-        #     elif TOUCH_ZONE([440,1360], [627,1500]):  # BACK
-        #         slide = slide[:-1]
-        #         if len(slide) == 0: slide = ""
-        #     elif TOUCH_ZONE([813,1360], [1000,1500]): # ENTER
-        #         if int(slide) >= len(slideshow.file):
-        #             print(int(slide))
-        #             print(len(slideshow.file))
-        #             slide = len(slideshow.file)
-        #         F_slideshow(menu.sshw.check + 1, int(slide) - 2); F_main()
-        #     elif TOUCH_ZONE([760,1710],   [990,1920]): F_lighting()
-        #     elif TOUCH_ZONE([1000,1760], [1215,1920]): pass#SKETCH("screen") 
-        #     elif TOUCH_ZONE([970,340],    [1110,460]): return 'back'  
-        #     elif TOUCH_ZONE([1110,340],   [1240,460]): return 'exit' 
-        #     elif TOUCH_ZONE([1240,1760], [1440,1920]): return 'exit' #settings
-            
-        #     else: 
-        #         return
-        #         #continue
+            if utils.touch_zone(user_input, self.wfm_touch_dict[elem]):
 
-    def F_wfm(self, slideshow, user_input):
-        pass
-    # w_Check = directory + "check_bar.pgm"; w_Uncheck = directory + "uncheck_bar.pgm"
+                display.wfm_display()
 
-    # LOAD(directory + "menu_wfm.pgm")
-    # WINDOW_HEADER('Waveform menu')
-    
-    # if device.sect == 'psettings':
-    #     while True:
-    #         data = GET_DATA('wfm', 'slideshow')
-    #         CHECK(menu.wfms, int(data), 'display', w_Check, w_Uncheck)
-           
-    #         GET_INPUT()
-            #if touch:
-                # if   TOUCH_ZONE([[300,900],    [510,1100]]): CHECK(menu.wfms, 0, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 0, 'slideshow');
-                # elif TOUCH_ZONE([[510,900],    [720,1100]]): CHECK(menu.wfms, 1, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 1, 'slideshow');
-                # elif TOUCH_ZONE([[720,900],    [930,1100]]): CHECK(menu.wfms, 2, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 2, 'slideshow');
-                # elif TOUCH_ZONE([[930,900],   [1140,1100]]): CHECK(menu.wfms, 3, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 3, 'slideshow'); 
-                # elif TOUCH_ZONE([[300,1100],   [510,1300]]): CHECK(menu.wfms, 4, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 4, 'slideshow');
-                # elif TOUCH_ZONE([[510,1100],   [720,1300]]): CHECK(menu.wfms, 5, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 5, 'slideshow');
-                # elif TOUCH_ZONE([[720,1100],   [930,1300]]): CHECK(menu.wfms, 6, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 6, 'slideshow');
-                # elif TOUCH_ZONE([[930,1100],  [1140,1300]]): CHECK(menu.wfms, 7, None, w_Check, w_Uncheck); REPLACE_DATA('wfm', 7, 'slideshow');  
+                return elem
 
+    def rotation(self, user_input, display):
+        for elem in self.rot_touch_dict:
 
-        
+            if utils.touch_zone(user_input, self.rot_touch_dict[elem]):
+
+                display.rotation_display()
+
+                return elem
+
+    def dispflsh(self, user_input, display):
+        for elem in self.disp_flsh_touch_dict:
+
+            if utils.touch_zone(user_input, self.disp_flsh_touch_dict[elem]):
+          
+                display.dispflsh_display()
+
+                return elem

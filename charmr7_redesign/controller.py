@@ -132,7 +132,7 @@ class Controller:
             self.display.display_msettings()
         elif self.current_application == 'pause':
             self.current_application = 'pausesettings'
-            #self.display.display_psettings()
+            self.display.display_psettings()
 
     '''
     Displays the temp/brightness slider and sends the user input to the BrightnessTemperatureSlider class to change the brightness/temperature on the device.
@@ -173,6 +173,7 @@ class Controller:
         application = self.main_menu.process_input(user_input)
 
         if application != None: 
+            #UPDATE VIEW HERE!!! - SHOW SELECTED OPTION
             if type(application) == Slideshow:
                 self.current_application = 'slideshow'
                 
@@ -191,13 +192,21 @@ class Controller:
     #     self.slideshow.process_pause_input(user_input)
 
     def send_psettings_input(self, user_input):
-        self.slideshow.process_settings_input(user_input)
+
+        # not ideal design, but prevents very convoluted code / needlessly passing info back and forth, so I am giving the slideshow access to the display. 
+        # Once this version is up and running I want to go back and see if a better design is possible.
+        output = self.slideshow.process_settings_input(user_input, self.display)
 
         # USE THIS TO TAKE CARE OF DISPLAYING PAUSE SCREEN CHECKMARKED OPTIONS, ETC
         self.display.update_pause_screen()
 
+        if output == 'main':
+            self.load_main()
+        elif output == 'pause':
+            self.load_pause()
+
     '''
-    Sets the current application to be 'pause' and sends a command to display to display the pause screen.
+    Sets the current application to be 'pause' and sends a command to display the pause screen.
     '''
     def load_pause(self):
         self.current_application = 'pause'
