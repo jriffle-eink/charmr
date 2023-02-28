@@ -17,9 +17,7 @@ class PauseSettingsMenu(BaseMenu):
         self.check_file = check_file
         self.uncheck_file = uncheck_file
 
-        super(PauseSettingsMenu, self).__init__(self.locations, check_file, uncheck_file)#locations, check_file, uncheck_file)
-
-        #self.cur_cmd = None
+        super(PauseSettingsMenu, self).__init__(self.locations, check_file, uncheck_file)#locations, check_file, uncheck_file)  
 
 
         # used mainly for view purposes to know what items to display
