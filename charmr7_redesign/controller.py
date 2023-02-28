@@ -30,15 +30,15 @@ class Controller:
         # self.touch_input = None
         # self.button_input = None
         # responsible for displaying any changes to the demo (menus, slideshows, etc.)
-        self.display = Display()
+        display = Display()
         # responsible for monitoring the brightness/temperature of the demo
-        self.bght_temp_menu = BrightnessTemperatureMenu()
+        self.bght_temp_menu = BrightnessTemperatureMenu(display)
         print('1')
 
         # responsible for monitoring applications that can be launched from the main menu (currently, slideshows, sketch app, and main menu settings)
-        self.main_menu = MainMenu()
+        self.main_menu = MainMenu(display)
         print('2')
-        self.main_settings_menu = MainSettingsMenu()
+        self.main_settings_menu = MainSettingsMenu(display)
         print('3')
 
         self.slideshow = None
@@ -148,7 +148,7 @@ class Controller:
     '''
     def load_brightness(self):
         self.bght_temp_menu.select_type("bght")
-        self.display.load_area(self.display.directory + 'label_brightness.pgm', (616,1718))   
+         
 
     '''
     Displays the 'temperature' label above the brightness/temperature slider and updates the BrightnessTemperatureMenu's current application so that any touches on the
@@ -156,7 +156,7 @@ class Controller:
     '''
     def load_temperature(self):
         self.bght_temp_menu.select_type("temp")
-        self.display.load_area(self.display.directory + 'label_temperature.pgm', (616,1718))
+        
 
     '''
     Sets the current application to be 'main' and sends a command to display to display the starup screen.
@@ -184,10 +184,26 @@ class Controller:
     def send_msettings_input(self, user_input):
         output = self.main_settings_menu.process_input(user_input)
 
-        self.slideshow.process_settings_output(output)
+        slideshow_output = self.slideshow.process_settings_output(output)
+
+        # need to update current application
+
+        if slideshow_output == 'main':
+            self.current_application = 'main'
+        elif slideshow_output == 'pause':
+            self.current_application = 'pause'
 
     def send_psettings_input(self, user_input):
-        self.slideshow.process_settings_input(user_input)
+        output = self.slideshow.process_settings_input(user_input)
+        
+        slideshow_output = self.slideshow.process_settings_output(output)
+
+        # need to update current application
+
+        if slideshow_output == 'main':
+            self.current_application = 'main'
+        elif slideshow_output == 'pause':
+            self.current_application = 'pause'
 
     '''
     Sets the current application to be 'pause' and sends a command to display to display the pause screen.
@@ -198,7 +214,6 @@ class Controller:
 
     def sketch_run(self, app):
         self.main_menu.launch_sketch_app()
-        self.display.display_sketch_app()
 
     '''
     Autoruns the slideshow. If no user input is recieved before the slide timeout, sends a command to the display to change the slide. Otherwise, processes the slideshow

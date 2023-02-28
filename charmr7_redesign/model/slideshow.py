@@ -13,7 +13,6 @@ PARAMETERS
 slideshow_num: int (which charmr module slideshow info should be used)
 '''
 class Slideshow():
-
     def __init__(self, slideshow_num, display):
 
         # the current slide of the slideshow

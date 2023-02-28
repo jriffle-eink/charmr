@@ -10,15 +10,13 @@ Responsible for monitoring the state of the main menu/launching any main-menu re
 '''
 class MainMenu(BaseMenu):
     
-    def __init__(self, check_file=cm.check.file, uncheck_file=cm.uncheck.file):
+    def __init__(self, display, check_file=cm.check.file, uncheck_file=cm.uncheck.file):
 
-        self.check_file = check_file
-        self.uncheck_file = uncheck_file
 
         # build the menu locations
-        self.locations, self.items = self.menu_build("main", '_mainmenu') 
+        locations, self.items = self.menu_build("main", '_mainmenu') 
 
-        super(MainMenu, self).__init__()#locations, check_file, uncheck_file)
+        super(MainMenu, self).__init__(locations, display, check_file, uncheck_file)#locations, check_file, uncheck_file)
 
         # if there is a slideshow being worked with, it is stored here
         self.slideshow = None
@@ -49,7 +47,7 @@ class MainMenu(BaseMenu):
         """    
         #s_Check = directory + 'check_bar.pgm'; s_Uncheck = directory + 'uncheck_bar.pgm'    
 
-        return Slideshow(int(num))
+        return Slideshow(int(num), self.display)
 
         #CHECK(menu.sshw, int(arg)-1, None, s_Check, s_Uncheck)
         

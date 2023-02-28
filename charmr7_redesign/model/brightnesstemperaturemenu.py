@@ -14,15 +14,14 @@ import utils
 Controls the brightness and temperature settings of the demo
 '''
 class BrightnessTemperatureMenu(BaseMenu):
-    def __init__(self, check_file="check_brightness2.pgm", uncheck_file="uncheck_brightness2.pgm"):
+    def __init__(self, display, check_file="check_brightness2.pgm", uncheck_file="uncheck_brightness2.pgm"):
 
-        self.check_file = check_file
-        self.uncheck_file = uncheck_file
-        self.locations = [0]*10
+
+        locations = [0]*10
         for i in range(10):
             self.locations = (476+(i*49), 1772)
 
-        super(BrightnessTemperatureMenu, self).__init__()#locations_list, check_file, uncheck_file)
+        super(BrightnessTemperatureMenu, self).__init__(locations, display, check_file, uncheck_file)#locations_list, check_file, uncheck_file)
 
         # The type of menu being worked with. If 'bght', the brightness of the demo nwill be modified by any given function. If 'temp', the
         # temperature will be modified.
@@ -128,6 +127,8 @@ class BrightnessTemperatureMenu(BaseMenu):
         elif self.cur_type == "bght" and change:
             self.current_brightness = cur_val
             self.set_aurora_brightness(self.current_brightness)
+
+        # display checkmarked value
         
 
     '''
@@ -142,8 +143,10 @@ class BrightnessTemperatureMenu(BaseMenu):
     def select_type(self, selected):
         if selected == "bght":
             self.cur_type = "bght"
+            self.display.load_area(self.display.directory + 'label_brightness.pgm', (616,1718))  
         elif selected == "temp":
             self.cur_type = "temp"
+            self.display.load_area(self.display.directory + 'label_temperature.pgm', (616,1718))
 
     '''
     Sets the brightness of the demo
