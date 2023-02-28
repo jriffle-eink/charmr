@@ -132,7 +132,7 @@ class Controller:
             self.display.display_msettings()
         elif self.current_application == 'pause':
             self.current_application = 'pausesettings'
-            self.display.display_psettings()
+            #self.display.display_psettings()
 
     '''
     Displays the temp/brightness slider and sends the user input to the BrightnessTemperatureSlider class to change the brightness/temperature on the device.
@@ -165,43 +165,6 @@ class Controller:
         self.current_application = 'main'
         self.display.display_startup_screen()
 
-    def load_sketch(self):
-            #def F_sketch(arg = None):
-        """
-        Clicking the sketch button during a paused slideshow calls acepsketch
-        The draw function only works if the image is loaded as 'fast', highlighter as 'DU'
-        This means for color images, any non-fast rendered images must be color index converted using color_convert()
-        """
-        slideshow_specs = self.slideshow.cm_slideshow
-        
-        if self.current_application == 'main':
-            self.display.clear('best')
-            os.system("FULL_WFM_MODE=2 PART_WFM_MODE=1 /mnt/mmc/api/tools/acepsketch /mnt/mmc/application/sketch/sketch_app.txt")
-            self.load_main()
-            return
-        
-        if self.current_application == 'psettings': # If demo was in a menu when the sketch button was pressed, remove the menu by reloading  and displaying the slide
-            self.display.load(slideshow_specs) # Reload the slideshow slide #N
-            self.display.display_area(slideshow_specs, (0,80), (1440,1715)) #Redisplay the background slideshow     
-
-        if slideshow_specs.wfm[self.slideshow.cur_slide] == 3: # Only use highlighter on black and white text images
-            self.display.load("/mnt/mmc/images/charmr/1440x1920/highlighter.pgm")   
-            self.display.display(2, 'full')
-            self.display.load(slideshow_specs)
-            self.display.display_area(6, (0,80), (1440,1715))
-            converted = PP1_22_40C(slideshow_specs.path + slideshow_specs.file[self.slideshow.cur_slide], 'text', 'pen') # color_convert.PP1_22_40C() for this GAL3 .wbf       
-            # highlight_sketch.txt calls Jaya's ACeP sketch program. The background image is loaded as tmp_converted
-            # This means that the color_convert function must be run regardless of the current wfm
-            os.system("FULL_WFM_MODE=2 PART_WFM_MODE=1 /mnt/mmc/api/tools/acepsketch /mnt/mmc/application/sketch/sketch_highlighter.txt")
-        else: # else use draw
-            self.display.load("/mnt/mmc/images/charmr/1440x1920/draw.pgm")   
-            self.display.display(2, 'full')
-            converted = PP1_22_40C(slideshow_specs.path + slideshow_specs.file[self.slideshow.cur_slide], 'strd', 'fast') # color_convert.PP1_22_40C() for this GAL3 .wbf       
-            os.system("FULL_WFM_MODE=2 PART_WFM_MODE=1 /mnt/mmc/api/tools/acepsketch /mnt/mmc/application/sketch/sketch_draw.txt")  
-            
-        self.load_pause() # Go back to pause when finished
-
-    
     '''
     Sends user input to the main menu. Currently, users can select either a slideshow or the sketch app to be run. The main menu will return the application that
     is selected, and the controller will either run and display the slideshow or run and display the sketch app.
@@ -210,7 +173,6 @@ class Controller:
         application = self.main_menu.process_input(user_input)
 
         if application != None: 
-            #UPDATE VIEW HERE!!! - SHOW SELECTED OPTION
             if type(application) == Slideshow:
                 self.current_application = 'slideshow'
                 
@@ -229,25 +191,21 @@ class Controller:
     #     self.slideshow.process_pause_input(user_input)
 
     def send_psettings_input(self, user_input):
-
-        # not ideal design, but prevents very convoluted code / needlessly passing info back and forth, so I am giving the slideshow access to the display. 
-        # Once this version is up and running I want to go back and see if a better design is possible.
-        output = self.slideshow.process_settings_input(user_input, self.display)
+        self.slideshow.process_settings_input(user_input)
 
         # USE THIS TO TAKE CARE OF DISPLAYING PAUSE SCREEN CHECKMARKED OPTIONS, ETC
         self.display.update_pause_screen()
 
-        if output == 'main':
-            self.load_main()
-        elif output == 'pause':
-            self.load_pause()
-
     '''
-    Sets the current application to be 'pause' and sends a command to display the pause screen.
+    Sets the current application to be 'pause' and sends a command to display to display the pause screen.
     '''
     def load_pause(self):
         self.current_application = 'pause'
         self.display.display_pause()                                                                                                                                                                                                                                                                       
+
+    def sketch_run(self, app):
+        self.main_menu.launch_sketch_app()
+        self.display.display_sketch_app()
 
     '''
     Autoruns the slideshow. If no user input is recieved before the slide timeout, sends a command to the display to change the slide. Otherwise, processes the slideshow
