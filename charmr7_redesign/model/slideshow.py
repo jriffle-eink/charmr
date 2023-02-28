@@ -14,7 +14,7 @@ slideshow_num: int (which charmr module slideshow info should be used)
 '''
 class Slideshow():
 
-    def __init__(self, slideshow_num):
+    def __init__(self, slideshow_num, display):
 
         # the current slide of the slideshow
         self.cur_slide = 0
@@ -31,8 +31,10 @@ class Slideshow():
         # the length of the slideshow (number of slides)
         self.length = len(self.cm_slideshow.file)
 
+        self.display = display
+
         # to be implemented - pause management
-        self.pause_menu = PauseSettingsMenu(self)
+        self.pause_menu = PauseSettingsMenu(self.display)
 
         self.app_dict={
 
@@ -63,17 +65,24 @@ class Slideshow():
     '''
 
     '''
-    def process_settings_input(self, user_input, display):
-        self.pause_menu.process_input(user_input, display)
+    def process_settings_input(self, user_input):
+        output = self.pause_menu.process_input(user_input)
+
+        self.process_settings_output(output)
 
     def process_settings_output(self, output):
 
         if output != None:
-            if output[1] == 'change_slideshow': self.change_slideshow(output[1])
+            if output[1] == 'change_slideshow': 
+                self.change_slideshow(output[1])
 
-            elif output[1] == 'slide': self.cur_slide = output[1]
+            elif output[1] == 'slide': 
+                self.cur_slide = output[1]
+                self.display.change_slide()
 
-            elif output == 'pause' or 'main': return output
+            elif output == 'pause' or 'main': 
+                self.display.something()
+                return output
 
             else: self.replace_data(output[0], output[1], 'slideshow')
 

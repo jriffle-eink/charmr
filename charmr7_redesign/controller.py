@@ -29,7 +29,8 @@ class Controller:
         # I think these are unnecessary - user input can be stored as local variables since they are constantly changing
         # self.touch_input = None
         # self.button_input = None
-
+        # responsible for displaying any changes to the demo (menus, slideshows, etc.)
+        self.display = Display()
         # responsible for monitoring the brightness/temperature of the demo
         self.bght_temp_menu = BrightnessTemperatureMenu()
         print('1')
@@ -49,8 +50,7 @@ class Controller:
         self.current_application = 'main'
         print('5')
 
-        # responsible for displaying any changes to the demo (menus, slideshows, etc.)
-        self.display = Display()
+
         print('6')
 
         # to be implemented - easier way to send user input to the appropriate input processing method
@@ -182,19 +182,12 @@ class Controller:
 
 
     def send_msettings_input(self, user_input):
-        pass
+        output = self.main_settings_menu.process_input(user_input)
 
-    def send_slideshow_input(self, user_input):
-        pass
-
-    # def send_pause_input(self, user_input):
-    #     self.slideshow.process_pause_input(user_input)
+        self.slideshow.process_settings_output(output)
 
     def send_psettings_input(self, user_input):
         self.slideshow.process_settings_input(user_input)
-
-        # USE THIS TO TAKE CARE OF DISPLAYING PAUSE SCREEN CHECKMARKED OPTIONS, ETC
-        self.display.update_pause_screen()
 
     '''
     Sets the current application to be 'pause' and sends a command to display to display the pause screen.
@@ -220,7 +213,7 @@ class Controller:
             if user_input == None:
                 self.display.change_slide(self.slideshow, "next")
             else:
-                output = self.process_slideshow_input(self.slideshow, user_input)
+                output = self.send_slideshow_input(self.slideshow, user_input)
 
                 # come up with something better. Right now, if user pauses process input will return QUIT signifying that autoplay of slideshow should end
                 if output == 'QUIT':
@@ -235,7 +228,7 @@ class Controller:
     Button input (user_input is a string)
         - either changes slide or loads pause screen based on swipe direction
     '''
-    def process_slideshow_input(self, slideshow, user_input):
+    def send_slideshow_input(self, slideshow, user_input):
         if type(user_input) == list: 
             #direction = 'remain'
             self.load_pause()

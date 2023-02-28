@@ -19,9 +19,11 @@ uncheck_file: str (the uncheck style the  menu will use)
 class BaseMenu(object):
     __metaclass__ = ABC
     
-    def __init__(self, locations, check_file, uncheck_file):
+    def __init__(self, locations, display, check_file, uncheck_file):
 
         self.locations = locations
+
+        self.display = display
 
         self.cur_check = 0
 
