@@ -514,68 +514,34 @@ class Display():
                     f.write("SLEEP " + str(delay) + "\n")
                     m += 1
                     
-        subprocess.call("SET_SPECIFIC_TEMP=25 PWRDOWN_DELAY=10 /mnt/mmc/api/tools/cmder /mnt/mmc/api/tools/swipe.txt", shell=True)
-
-    def display_sketch_app(self):
-        #def F_sketch(arg = None):
-        """
-        Clicking the sketch button during a paused slideshow calls acepsketch
-        The draw function only works if the image is loaded as 'fast', highlighter as 'DU'
-        This means for color images, any non-fast rendered images must be color index converted using color_convert()
-        """
-        
-        if arg == 'app':
-            self.clear('best')
-            os.system("FULL_WFM_MODE=2 PART_WFM_MODE=1 /mnt/mmc/api/tools/acepsketch /mnt/mmc/application/sketch/sketch_app.txt") 
-            # device.sect = None
-            # F_main()
-            return
-        
-    def display_pause_sketch_app(self, slideshow):
-        
-        self.load(slideshow) # Reload the slideshow slide #N
-        self.display_area(slideshow, (0,80), (1440,1715)) #Redisplay the background slideshow     
-
-        # if slideshow.wfm[N] == 3: # Only use highlighter on black and white text images
-        #     LOAD("/mnt/mmc/images/charmr/1440x1920/highlighter.pgm")   
-        #     DISPLAY(2, 'full')
-        #     LOAD(slideshow)
-        #     DISPLAY_AREA(6, (0,80), (1440,1715))
-        #     converted = PP1_22_40C(slideshow.path + slideshow.file[N], 'text', 'pen') # color_convert.PP1_22_40C() for this GAL3 .wbf       
-        #     # highlight_sketch.txt calls Jaya's ACeP sketch program. The background image is loaded as tmp_converted
-        #     # This means that the color_convert function must be run regardless of the current wfm
-        #     os.system("FULL_WFM_MODE=2 PART_WFM_MODE=1 /mnt/mmc/api/tools/acepsketch /mnt/mmc/application/sketch/sketch_highlighter.txt")
-        # else: # else use draw
-        #     LOAD("/mnt/mmc/images/charmr/1440x1920/draw.pgm")   
-        #     DISPLAY(2, 'full')
-        #     converted = PP1_22_40C(slideshow.path + slideshow.file[N], 'strd', 'fast') # color_convert.PP1_22_40C() for this GAL3 .wbf       
-        #     os.system("FULL_WFM_MODE=2 PART_WFM_MODE=1 /mnt/mmc/api/tools/acepsketch /mnt/mmc/application/sketch/sketch_draw.txt")  
-            
-        # F_pause() # Go back to pause when finished
-
-            # def slideshow_progression(self, slideshow, slide_number=-1):
+        subprocess.call("SET_SPECIFIC_TEMP=25 PWRDOWN_DELAY=10 /mnt/mmc/api/tools/cmder /mnt/mmc/api/tools/swipe.txt", shell=True)  
     
-    def display_pause(self, slideshow):
+    def display_pause(self, slideshow, psettings=False):
         #def F_pause(): # Pauses the slideshow, pops up settings, and flashes an options banner
+
+        s = slideshow.cm_slideshow
+
+        N = slideshow.cur_slide
         """
         Opens a pause screen and waits for user input.
         From here user can see slide movement options, get to the settings menu, open brightness options, and open ACeP draw
         """
         # ----- LOADING CONTENT ------------
         # If exit button pressed on the pause menu screen:
-        if device.sect == 'psettings': # coming back from psettings menu
-            self.load(slideshow) # Reload the slideshow slide #N
-            self.display(slideshow, 'part') #Redisplay the background slideshow     
-        self.current_application = 'pause'
+        if psettings: # coming back from psettings menu
+            self.load(s) # Reload the slideshow slide #N
+            self.display(s, 'part') #Redisplay the background slideshow     
         
-        if slideshow.wfm[N] == 3:
+        if s.wfm[N] == 3:
             self.load(self.directory + "pause_highlight2.pgm")
         else: 
             self.load(self.directory + "pause_draw2.pgm")
+
         self.display_clock("load")
-        tmp = self.text_to_image(str(N + 1) + '/' + str(len(slideshow.file)), 'Serif_DejaVu.ttf', 50, self.directory + "blank_slidenumber_pause.pgm")   
+        tmp = self.text_to_image(str(N + 1) + '/' + str(len(s.file)), 'Serif_DejaVu.ttf', 50, self.directory + "blank_slidenumber_pause.pgm")   
         self.load_area(tmp, (3,0))
 
+        self.load_bght_temp_label()
         if   device.slide == 'bght':
             self.load_area(directory + 'label_brightness.pgm', (616,1718))   
             BUTTONS(bght, 'no display', directory + "check_brightness2.pgm", directory + "uncheck_brightness2.pgm") 
@@ -584,14 +550,14 @@ class Display():
             BUTTONS(temp, 'no display', directory + "check_brightness2.pgm", directory + "uncheck_brightness2.pgm") 
         
         # ----- DISPLAYING PAUSE CONTENT ------------
-        if slideshow.wfm[N] == wfm_Disp.best: 
-            DISPLAY(wfm_Disp.best, 'full') 
-        if slideshow.wfm[N] == wfm_Disp.fast: 
-            DISPLAY(wfm_Disp.fast, 'full')  
-        if slideshow.wfm[N] == wfm_Disp.text:
-            DISPLAY(wfm_Disp.strd, 'full')
-        if slideshow.wfm[N] == wfm_Disp.strd: 
-            DISPLAY(wfm_Disp.strd, 'full')
+        if s.wfm[N] == wfm_Disp.best: 
+            self.display(wfm_Disp.best, 'full') 
+        if s.wfm[N] == wfm_Disp.fast: 
+            self.display(wfm_Disp.fast, 'full')  
+        if s.wfm[N] == wfm_Disp.text:
+            self.display(wfm_Disp.strd, 'full')
+        if s.wfm[N] == wfm_Disp.strd: 
+            self.display(wfm_Disp.strd, 'full')
             
         img = Image.open(slideshow.path + slideshow.file[N]) # save the current slide to sketch directory for loading
         tmp = "/mnt/mmc/application/sketch/tmp.pgm"    
