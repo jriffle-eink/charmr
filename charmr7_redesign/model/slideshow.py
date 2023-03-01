@@ -26,7 +26,7 @@ class Slideshow():
         '''
         The charmr module slideshow is stored here for easy access to the slideshow information (waveform, rotation values, etc.)
         '''
-        self.cm_slideshow = self.change_slideshow(slideshow_num)
+        self.change_slideshow(slideshow_num)
 
         # the length of the slideshow (number of slides)
         self.length = len(self.cm_slideshow.file)
@@ -51,6 +51,8 @@ class Slideshow():
     The slide timeout value (int)
     '''
     def slide_timer(self): # This needs to be made into a json as well
+        time_Added = 0
+
         if str(self.cm_slideshow.wfm[self.cur_slide]) == '2': time_Added = 1024
         if str(self.cm_slideshow.wfm[self.cur_slide]) == '3': time_Added = 377
         if str(self.cm_slideshow.wfm[self.cur_slide]) == '4': time_Added = 518
@@ -58,7 +60,10 @@ class Slideshow():
         if str(self.cm_slideshow.wfm[self.cur_slide]) == '6': time_Added = 377
         if str(self.cm_slideshow.wfm[self.cur_slide]) == '7': time_Added = 729
 
-        return int(self.cm_slideshow.time[self.cur_slide])+time_Added             
+        return int(self.cm_slideshow.time[self.cur_slide]) + time_Added
+
+    def display_pause(self):
+        self.view.display_pause(self)             
 
     '''
 

@@ -34,7 +34,7 @@ class Controller:
         self.startup = Startup()
                 
         # responsible for monitoring the brightness/temperature of the demo
-        #self.bght_temp_menu = BrightnessTemperatureMenu() 
+        self.bght_temp_menu = BrightnessTemperatureMenu() 
 
         # responsible for monitoring applications that can be launched from the main menu (currently, slideshows, sketch app, and main menu settings)
         self.main_menu = MainMenu(view) # Builds menu, saves as temporary image
@@ -79,27 +79,27 @@ class Controller:
                 if self.current_application in ['main', 'mainsettings', 'pause', 'pausesettings']:
                     # these options can only be selected with touch (list)
                     if utils.touch_zone(user_input, self.touch_dict['slider']):
-                        self.load_slider(user_input)
+                        self.bght_temp_menu.brightness_temperature_slider(user_input)
 
                     elif utils.touch_zone(user_input, self.touch_dict['brightness_button']): 
-                        self.load_brightness()
+                        self.bght_temp_menu.select_type('bght')
 
                     elif utils.touch_zone(user_input, self.touch_dict['temperature_button']):
-                        self.load_temperature()
+                        self.bght_temp_menu.select_type('temp')
 
                     elif utils.touch_zone(user_input, self.touch_dict['sketch_button']):
                          if self.current_application == 'pause' or 'pausesettings':
-                            self.load_sketch()
+                            pass
 
                     elif utils.touch_zone(user_input, self.touch_dict['settings_button']): 
                         if self.current_application == 'main' or 'pause':
-                            self.load_settings()
+                            pass
 
                         elif self.current_application == 'mainsettings':
-                            self.load_main()
+                            pass
 
                         elif self.current_application == 'pausesettings':
-                            self.load_pause()
+                            pass
 
             # these menu-specific options can be selected by buttons or touch
             elif type(user_input) == str or list:
@@ -217,27 +217,15 @@ class Controller:
         #         self.slideshow_run()
 
 
-    def send_msettings_input(self, user_input):
-        pass
-
-    def send_slideshow_input(self, user_input):
-        pass
-
     # def send_pause_input(self, user_input):
     #     self.slideshow.process_pause_input(user_input)
-
-    def send_psettings_input(self, user_input):
-        self.slideshow.process_settings_input(user_input)
-
-        # USE THIS TO TAKE CARE OF DISPLAYING PAUSE SCREEN CHECKMARKED OPTIONS, ETC
-        # self.display.update_pause_screen()
 
     '''
     Sets the current application to be 'pause' and sends a command to display to display the pause screen.
     '''
-    def run_pause(self): pass
-        # self.current_application = 'pause'
-        # self.display.display_pause()                                                                                                                                                                                                                                                                       
+    def run_pause(self):
+        self.current_application = 'pause'
+        self.slideshow.display_pause()                                                                                                                                                                                                                                                                       
 
     def run_sketch(self, app): pass
         # self.main_menu.launch_sketch_app()
@@ -271,10 +259,10 @@ class Controller:
     Button input (user_input is a string)
         - either changes slide or loads pause screen based on swipe direction
     '''
-    def process_slideshow_input(self, slideshow, user_input):
+    def send_slideshow_input(self, slideshow, user_input):
         if type(user_input) == list: 
             #direction = 'remain'
-            self.load_pause()
+            self.run_pause()
 
             return 'QUIT'
             # CLEAR("strd")# Tap touch returns list value
@@ -285,17 +273,17 @@ class Controller:
             if user_input == "swipe right":
                 direction = "back"
             if user_input == "swipe down":
-                self.load_main()
+                self.run_main()
                 return 'QUIT'
             if user_input == "swipe up" or "enter":
-                self.load_pause()
+                self.run_pause()
                 return 'QUIT'
             if user_input == "up":
                 direction = "next"
             if user_input == "down":
                 direction = "back"          
 
-        self.display.change_slide(slideshow, direction) # LOADS AND DISPLAYS SLIDE
+        self.slideshow.change_slide(direction) # LOADS AND DISPLAYS SLIDE
         
 if __name__ == '__main__':
 

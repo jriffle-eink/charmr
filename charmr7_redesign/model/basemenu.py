@@ -1,4 +1,3 @@
-from abc import ABCMeta as ABC
 import math
 import sys
 sys.path.append('.')
@@ -18,7 +17,6 @@ uncheck_file: str (the uncheck style the  menu will use)
 '''
 
 class BaseMenu(object):
-    __metaclass__ = ABC
     
     def __init__(self, view, locations, check_file, uncheck_file):
 
@@ -43,6 +41,10 @@ class BaseMenu(object):
             'back_button': [[.6736*cm.wsize,.1771*cm.hsize], [.7708*cm.wsize,.2396*cm.hsize]],
             'slider': [[460,1730], [990,1850]]
             }
+
+    def change_checkmark(self):    
+    
+        self.view.change_checkmarked_option(self.locations, self.cur_check)
         
     def menu_locations(self, locations, check):
         

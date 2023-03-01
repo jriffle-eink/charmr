@@ -18,32 +18,37 @@ This class is responsible for all visual renderings. The instrcutions for each d
 
 class Display():
     
-    rot_List  = [[526, 1060], [833, 1060], [526, 1357],  [833, 1357]]
-    disp_List = [[654, 826],  [990, 826]]
-    flsh_List = [[599, 1108], [822, 1108], [1046, 1108], [599, 1300], [822, 1300]]
-    auto_List = [1046, 1300]
-    menu_List = [[270, 620],  [270, 820],  [270, 1020],  [270, 1220]]
-    sshw_List = [[771, 575],  [887, 575],  [1003, 575]]
-    
-    if cm.wsize == 1440 and cm.hsize == 1920: 
-        directory = '/mnt/mmc/images/charmr/1440x1920/'
-    if cm.wsize == 1264 and cm.hsize == 1680: 
-        directory = '/mnt/mmc/images/charmr/1264x1680/'
-    
-    wfm_disp = { # we should make this a json file to import so it's easily accessible for changes
-        'init': 0,
-        'text': 3,
-        'fast': 4,
-        'strd': 2,
-        'best': 5, 
-        'DU': 1,
-        'DUIN': 6,
-        'DUOUT': 7,
-        }
-    
     def __init__(self): 
+        self.rotation_Current = 1
+
+        self.rot_List  = [[526, 1060], [833, 1060], [526, 1357],  [833, 1357]]
+        self.disp_List = [[654, 826],  [990, 826]]
+        self.flsh_List = [[599, 1108], [822, 1108], [1046, 1108], [599, 1300], [822, 1300]]
+        self.auto_List = [1046, 1300]
+        self.menu_List = [[270, 620],  [270, 820],  [270, 1020],  [270, 1220]]
+        self.sshw_List = [[771, 575],  [887, 575],  [1003, 575]]
+    
+        if cm.wsize == 1440 and cm.hsize == 1920: 
+            self.directory = '/mnt/mmc/images/charmr/1440x1920/'
+        if cm.wsize == 1264 and cm.hsize == 1680: 
+            self.directory = '/mnt/mmc/images/charmr/1264x1680/'
         
-        pass
+        self.wfm_disp = { # we should make this a json file to import so it's easily accessible for changes
+            'init': 0,
+            'text': 3,
+            'fast': 4,
+            'strd': 2,
+            'best': 5, 
+            'DU': 1,
+            'DUIN': 6,
+            'DUOUT': 7,
+            }
+
+    def display_brightness(self):
+        self.load_area(self.directory + 'label_brightness.pgm', (616,1718))
+
+    def display_temp(self):
+        self.load_area(self.directory + 'label_temperature.pgm', (616,1718))
 
     '''
     Clears the current screen. Takes one of 5 arguments: 'slideshow', 'full', 'fast', 'strd', 'best', or 'none'
@@ -79,7 +84,7 @@ class Display():
         self.clear('init')
     
         self.clear('best')
-        
+    
         self.load(cm.startup.file, cm.startup.rot)
 
         self.display(cm.startup)
@@ -127,7 +132,7 @@ class Display():
         'center'out': Displays images center-out radially. Must be a part-display, so a CLEAR() function is automatically integrated in
         None:         Normal display
     '''
-    def change_slide(self, slideshow, direction): #, style = None): # Moves to next slide of slideshow
+    def change_slide(self, slideshow, direction,  style = None): #, style = None): # Moves to next slide of slideshow
 
         cm_info = slideshow.cm_slideshow
 
@@ -138,7 +143,7 @@ class Display():
             slideshow.cur_slide += 1; prev = -1; swipe = 'left'
             if slideshow.cur_slide >= slideshow.length: 
                 self.clear("full"); 
-                self.load_main()
+                self.display_main_menu()
             self.load(slideshow)
         elif direction == "back":
             slideshow.cur_slide -= 1; prev = 1; swipe = 'right'
@@ -150,7 +155,7 @@ class Display():
             self.load(slideshow)    
         elif direction == "remain": 
             if style == None:
-                self.display(cm_info, cm_info.disp[self.cur_slide])            
+                self.display(cm_info, cm_info.disp[slideshow.cur_slide])            
             if style == "swipe":
                 self.display_swipe(slideshow, "left", self.wfm_disp['text'])    
             if style == 'center-out':
@@ -158,173 +163,59 @@ class Display():
             return
         # --------------------------------------------------------------------------- 
         if cm_info.style == "swipe":    
-            if   cm_info.wfm[self.cur_slide] == self.wfm_disp['best']: # Best color
-                if   cm_info.wfm[self.cur_slide+prev] == self.wfm_disp['best']: self.display_swipe(slideshow, swipe, 13)
-                elif cm_info.wfm[self.cur_slide+prev] == self.wfm_disp['fast']: self.display_swipe(slideshow, swipe, 13, 'clear')
-                elif cm_info.wfm[self.cur_slide+prev] == self.wfm_disp['text']: self.display_swipe(slideshow, swipe, 13, 'clear', self.wfm_disp['text'])
-                elif cm_info.wfm[self.cur_slide+prev] == self.wfm_disp['strd']: self.display_swipe(slideshow, swipe, 13, 'clear')
+            if   cm_info.wfm[slideshow.cur_slide] == self.wfm_disp['best']: # Best color
+                if   cm_info.wfm[slideshow.cur_slide+prev] == self.wfm_disp['best']: self.display_swipe(slideshow, swipe, 13)
+                elif cm_info.wfm[slideshow.cur_slide+prev] == self.wfm_disp['fast']: self.display_swipe(slideshow, swipe, 13, 'clear')
+                elif cm_info.wfm[slideshow.cur_slide+prev] == self.wfm_disp['text']: self.display_swipe(slideshow, swipe, 13, 'clear', self.wfm_disp['text'])
+                elif cm_info.wfm[slideshow.cur_slide+prev] == self.wfm_disp['strd']: self.display_swipe(slideshow, swipe, 13, 'clear')
                 else: self.display_swipe(slideshow, "left", 13)                      
-            elif cm_info.wfm[self.cur_slide] == self.wfm_disp['fast']: # Fast color
-                if   cm_info.wfm[self.cur_slide+prev] == self.wfm_disp['best']: self.display_swipe(slideshow, swipe, 13, 'clear')
-                elif cm_info.wfm[self.cur_slide+prev] == self.wfm_disp['fast']: self.display_swipe(slideshow, swipe, 13)  
-                elif cm_info.wfm[self.cur_slide+prev] == self.wfm_disp['text']: self.display(slideshow, self.wfm_disp['fast'], slideshow.disp[self.cur_slide])
-                elif cm_info.wfm[self.cur_slide+prev] == self.wfm_disp['strd']: self.display_swipe(slideshow, swipe, 13)
+            elif cm_info.wfm[slideshow.cur_slide] == self.wfm_disp['fast']: # Fast color
+                if   cm_info.wfm[slideshow.cur_slide+prev] == self.wfm_disp['best']: self.display_swipe(slideshow, swipe, 13, 'clear')
+                elif cm_info.wfm[slideshow.cur_slide+prev] == self.wfm_disp['fast']: self.display_swipe(slideshow, swipe, 13)  
+                elif cm_info.wfm[slideshow.cur_slide+prev] == self.wfm_disp['text']: self.display(slideshow, self.wfm_disp['fast'], slideshow.disp[slideshow.cur_slide])
+                elif cm_info.wfm[slideshow.cur_slide+prev] == self.wfm_disp['strd']: self.display_swipe(slideshow, swipe, 13)
                 else: self.display_swipe(slideshow, "left", 13)
-            elif cm_info.wfm[self.cur_slide] == self.wfm_disp['text']: # Text
-                if   cm_info.wfm[self.cur_slide+prev] == self.wfm_disp['best']: self.display_swipe(slideshow, swipe, 13, 'clear only')
-                elif cm_info.wfm[self.cur_slide+prev] == self.wfm_disp['fast']: self.display(slideshow, self.wfm_disp['strd'], slideshow.disp[self.cur_slide])   
-                elif cm_info.wfm[self.cur_slide+prev] == self.wfm_disp['text']: self.display(slideshow, self.wfm_disp['text'], slideshow.disp[self.cur_slide]) 
-                elif cm_info.wfm[self.cur_slide+prev] == self.wfm_disp['strd']: self.display(slideshow, self.wfm_disp['strd'], slideshow.disp[self.cur_slide]) 
+            elif cm_info.wfm[slideshow.cur_slide] == self.wfm_disp['text']: # Text
+                if   cm_info.wfm[slideshow.cur_slide+prev] == self.wfm_disp['best']: self.display_swipe(slideshow, swipe, 13, 'clear only')
+                elif cm_info.wfm[slideshow.cur_slide+prev] == self.wfm_disp['fast']: self.display(slideshow, self.wfm_disp['strd'], slideshow.disp[slideshow.cur_slide])   
+                elif cm_info.wfm[slideshow.cur_slide+prev] == self.wfm_disp['text']: self.display(slideshow, self.wfm_disp['text'], slideshow.disp[slideshow.cur_slide]) 
+                elif cm_info.wfm[slideshow.cur_slide+prev] == self.wfm_disp['strd']: self.display(slideshow, self.wfm_disp['strd'], slideshow.disp[slideshow.cur_slide]) 
                 else: self.display_swipe(slideshow, "left", 13)            
-            elif cm_info.wfm[self.cur_slide] == self.wfm_disp['strd']: # Strd color
-                if   cm_info.wfm[self.cur_slide+prev] == self.wfm_disp['best']: self.display_swipe(slideshow, swipe, 13, 'clear')
-                elif cm_info.wfm[self.cur_slide+prev] == self.wfm_disp['fast']: self.display_swipe(slideshow, swipe, 13)  
-                elif cm_info.wfm[self.cur_slide+prev] == self.wfm_disp['text']: self.display(slideshow, self.wfm_disp['strd'], slideshow.disp[self.cur_slide])
-                elif cm_info.wfm[self.cur_slide+prev] == self.wfm_disp['strd']: self.display_swipe(slideshow, swipe, 13)
+            elif cm_info.wfm[slideshow.cur_slide] == self.wfm_disp['strd']: # Strd color
+                if   cm_info.wfm[slideshow.cur_slide+prev] == self.wfm_disp['best']: self.display_swipe(slideshow, swipe, 13, 'clear')
+                elif cm_info.wfm[slideshow.cur_slide+prev] == self.wfm_disp['fast']: self.display_swipe(slideshow, swipe, 13)  
+                elif cm_info.wfm[slideshow.cur_slide+prev] == self.wfm_disp['text']: self.display(slideshow, self.wfm_disp['strd'], slideshow.disp[slideshow.cur_slide])
+                elif cm_info.wfm[slideshow.cur_slide+prev] == self.wfm_disp['strd']: self.display_swipe(slideshow, swipe, 13)
                 else: self.display_swipe(slideshow, "left", 13)                   
         # ------------------------------------------------------ 
         elif cm_info.style == "center-out":
-            DISPLAY_CENTER_OUT(slideshow.wfm[N])
+            self.display_center_out(slideshow, cm_info.wfm[slideshow.cur_slide])
         # ------------------------------------------------------       
         else: # NORMAL DISPLAY STYLE
-            if   slideshow.wfm[self.cur_slide] == self.wfm_disp['best']: # Best color
-                if   slideshow.wfm[self.cur_slide+prev] == self.wfm_disp['best']: self.display(slideshow, self.wfm_disp['best'], slideshow.disp[self.cur_slide])
-                elif slideshow.wfm[self.cur_slide+prev] == self.wfm_disp['fast']: CLEAR('best'); self.display(slideshow, self.wfm_disp['best'], slideshow.disp[self.cur_slide])
-                elif slideshow.wfm[self.cur_slide+prev] == self.wfm_disp['text']: CLEAR('text'); self.display(slideshow, self.wfm_disp['best'], slideshow.disp[self.cur_slide])
-                elif slideshow.wfm[self.cur_slide+prev] == self.wfm_disp['strd']: CLEAR('best'); self.display(slideshow, self.wfm_disp['best'], slideshow.disp[self.cur_slide])
+            if   slideshow.wfm[slideshow.cur_slide] == self.wfm_disp['best']: # Best color
+                if   slideshow.wfm[slideshow.cur_slide+prev] == self.wfm_disp['best']: self.display(slideshow, self.wfm_disp['best'], slideshow.disp[slideshow.cur_slide])
+                elif slideshow.wfm[slideshow.cur_slide+prev] == self.wfm_disp['fast']: self.clear('best'); self.display(slideshow, self.wfm_disp['best'], slideshow.disp[slideshow.cur_slide])
+                elif slideshow.wfm[slideshow.cur_slide+prev] == self.wfm_disp['text']: self.clear('text'); self.display(slideshow, self.wfm_disp['best'], slideshow.disp[slideshow.cur_slide])
+                elif slideshow.wfm[slideshow.cur_slide+prev] == self.wfm_disp['strd']: self.clear('best'); self.display(slideshow, self.wfm_disp['best'], slideshow.disp[slideshow.cur_slide])
                 else: self.display_swipe(slideshow, "right", 13)                      
-            elif slideshow.wfm[self.cur_slide] == self.wfm_disp['fast']: # Fast color
-                if   slideshow.wfm[self.cur_slide+prev] == self.wfm_disp['best']: CLEAR('best'); self.display(slideshow, self.wfm_disp['fast'], slideshow.disp[self.cur_slide])
-                elif slideshow.wfm[self.cur_slide+prev] == self.wfm_disp['fast']: self.display(slideshow, self.wfm_disp['fast'], slideshow.disp[self.cur_slide])  
-                elif slideshow.wfm[self.cur_slide+prev] == self.wfm_disp['text']: self.display(slideshow, self.wfm_disp['fast'], slideshow.disp[self.cur_slide])
-                elif slideshow.wfm[self.cur_slide+prev] == self.wfm_disp['strd']: self.display(slideshow, self.wfm_disp['fast'], 13)
+            elif slideshow.wfm[slideshow.cur_slide] == self.wfm_disp['fast']: # Fast color
+                if   slideshow.wfm[slideshow.cur_slide+prev] == self.wfm_disp['best']: self.clear('best'); self.display(slideshow, self.wfm_disp['fast'], slideshow.disp[slideshow.cur_slide])
+                elif slideshow.wfm[slideshow.cur_slide+prev] == self.wfm_disp['fast']: self.display(slideshow, self.wfm_disp['fast'], slideshow.disp[slideshow.cur_slide])  
+                elif slideshow.wfm[slideshow.cur_slide+prev] == self.wfm_disp['text']: self.display(slideshow, self.wfm_disp['fast'], slideshow.disp[slideshow.cur_slide])
+                elif slideshow.wfm[slideshow.cur_slide+prev] == self.wfm_disp['strd']: self.display(slideshow, self.wfm_disp['fast'], 13)
                 else: self.display_swipe(slideshow, "right", 13)
-            elif slideshow.wfm[self.cur_slide] == self.wfm_disp['text']: # Text
-                if   slideshow.wfm[self.cur_slide+prev] == self.wfm_disp['best']: CLEAR('best'); self.display(slideshow, self.wfm_disp['text'], slideshow.disp[self.cur_slide])
-                elif slideshow.wfm[self.cur_slide+prev] == self.wfm_disp['fast']: self.display(slideshow, self.wfm_disp['strd'], slideshow.disp[self.cur_slide])   
-                elif slideshow.wfm[self.cur_slide+prev] == self.wfm_disp['text']: self.display(slideshow, self.wfm_disp['text'], slideshow.disp[self.cur_slide]) 
-                elif slideshow.wfm[self.cur_slide+prev] == self.wfm_disp['strd']: self.display(slideshow, self.wfm_disp['strd'], slideshow.disp[self.cur_slide]) 
-                else: self.display(slideshow, slideshow.disp[self.cur_slide])           
-            elif slideshow.wfm[self.cur_slide] == self.wfm_disp['strd']: # Strd color
-                if   slideshow.wfm[self.cur_slide+prev] == self.wfm_disp['best']: CLEAR('best'); self.display(slideshow, self.wfm_disp['strd'], slideshow.disp[self.cur_slide])
-                elif slideshow.wfm[self.cur_slide+prev] == self.wfm_disp['fast']: self.display(slideshow, self.wfm_disp['strd'], slideshow.disp[self.cur_slide])  
-                elif slideshow.wfm[self.cur_slide+prev] == self.wfm_disp['text']: self.display(slideshow, self.wfm_disp['strd'], slideshow.disp[self.cur_slide])
-                elif slideshow.wfm[self.cur_slide+prev] == self.wfm_disp['strd']: self.display(slideshow, self.wfm_disp['strd'], slideshow.disp[self.cur_slide])           
+            elif slideshow.wfm[slideshow.cur_slide] == self.wfm_disp['text']: # Text
+                if   slideshow.wfm[slideshow.cur_slide+prev] == self.wfm_disp['best']: self.clear('best'); self.display(slideshow, self.wfm_disp['text'], slideshow.disp[slideshow.cur_slide])
+                elif slideshow.wfm[slideshow.cur_slide+prev] == self.wfm_disp['fast']: self.display(slideshow, self.wfm_disp['strd'], slideshow.disp[slideshow.cur_slide])   
+                elif slideshow.wfm[slideshow.cur_slide+prev] == self.wfm_disp['text']: self.display(slideshow, self.wfm_disp['text'], slideshow.disp[slideshow.cur_slide]) 
+                elif slideshow.wfm[slideshow.cur_slide+prev] == self.wfm_disp['strd']: self.display(slideshow, self.wfm_disp['strd'], slideshow.disp[slideshow.cur_slide]) 
+                else: self.display(slideshow, slideshow.disp[slideshow.cur_slide])           
+            elif slideshow.wfm[slideshow.cur_slide] == self.wfm_disp['strd']: # Strd color
+                if   slideshow.wfm[slideshow.cur_slide+prev] == self.wfm_disp['best']: self.clear('best'); self.display(slideshow, self.wfm_disp['strd'], slideshow.disp[slideshow.cur_slide])
+                elif slideshow.wfm[slideshow.cur_slide+prev] == self.wfm_disp['fast']: self.display(slideshow, self.wfm_disp['strd'], slideshow.disp[slideshow.cur_slide])  
+                elif slideshow.wfm[slideshow.cur_slide+prev] == self.wfm_disp['text']: self.display(slideshow, self.wfm_disp['strd'], slideshow.disp[slideshow.cur_slide])
+                elif slideshow.wfm[slideshow.cur_slide+prev] == self.wfm_disp['strd']: self.display(slideshow, self.wfm_disp['strd'], slideshow.disp[slideshow.cur_slide])           
 
-    '''
-    The main menu screen
-    '''
-    def display_main_menu(self):
-        self.clear("text")
-
-        self.load(self.directory + "tmp_mainmenu.pgm", 1)  
-        #self.display_clock("load")
-        # BUTTONS(main, 'no display')      
-        self.load_area(cm.banner.file, (0,80), cm.banner.rot)
-        
-        # if os.path.exists("tmp.txt"): 
-        #     os.remove("tmp.txt")
-        with open("tmp.txt", "w") as f: # Need cmder code to get all the main menu regions to display at once
-            f.write("SET_ROT 90 \n")
-            f.write("UPD_PART_AREA " + str(self.wfm_disp['text']))
-            f.write(" 0 " + str(int(math.floor(.00000*cm.hsize))) + " " + str(cm.wsize) + " " + str(int(math.floor(.04115*cm.hsize))) + "\n") # HEADER
-            f.write("UPD_PART_AREA " + str(self.wfm_disp['text']))
-            f.write(" 0 " + str(int(math.floor(.15625*cm.hsize))) + " " + str(cm.wsize) + " " + str(int(math.floor(.73750*cm.hsize))) + "\n") # BODY
-            f.write("UPD_PART_AREA " + str(self.wfm_disp['strd']))
-            f.write(" 0 " + str(int(math.floor(.89375*cm.hsize))) + " " + str(cm.wsize) + " " + str(int(math.floor(.10625*cm.hsize))) + "\n") # FOOTER
-            f.write("UPD_PART_AREA " + str(cm.banner.wfm))
-            f.write(" 0 " + str(int(math.floor(.04167*cm.hsize))) + " " + str(cm.wsize) + " " + str(int(math.floor(.11458*cm.hsize))) + "\n") # BANNER 
-        subprocess.call("/mnt/mmc/api/tools/cmder /mnt/mmc/api/tools/tmp.txt", shell=True)
-
-    '''
-    Loads the given image.
-
-    ARGUMENTS
-    img: IMAGE (the image being loaded from the charmr module file)
-    rot (optional): int (rotation of image)
-    '''
-    def load(self, img, rot=1):
-        self.rotation_Current = rot
-        print('bs_load_img ' + str(rot) + ' ' + str(img))
-        #os.system('bs_load_img ' + str(rot) + ' ' + str(img))
-        subprocess.call('bs_load_img ' + str(rot) + ' ' + str(img), shell = True, close_fds=True)
-        print("called")
-
-    '''
-    Loads only a specified area of the screen with the given image.
-
-    ARGUMENTS
-    img: IMAGE (the image being loaded from the charmr module file)
-    rot: int (rotation of image)
-    pos: list(int, int) (where on the screen the image should be loaded)
-    '''
-    def load_area(self, img, pos, rot=1):
-        X = ' '; SSX = cm.hsize; SSY = cm.wsize
-        if   str(rot) == '1':
-            subprocess.call('bs_load_img_area ' + str(rot) +X+ str(pos[0]) +X+ str(pos[1]) +X+ str(img), shell = True)
-        elif str(rot) == '0':
-            subprocess.call('bs_load_img_area ' + str(rot) +X+ str(SSY - pos1[1]) +X+ str(pos1[0]) +X+ str(img), shell = True)
-        elif str(rot) == '2':
-            subprocess.call('bs_load_img_area ' + str(rot) +X+ str(pos[1]) +X+ str(SSX - pos[0]) +X+ str(img), shell = True)
-        elif str(rot) == '3': 
-            subprocess.call('bs_load_img_area ' + str(rot) + ' ' + str(SSX - pos[0]) + ' ' + str(SSY - pos[1]) + ' ' + str(img), shell = True)
-
-    '''
-    Displays the given image.
-
-    ARGUMENTS
-    img: IMAGE (the image being displayed from the charmr module file)
-    method (optional): str (display type - cmder specification)
-    '''
-    def display(self, cm_slideshow, wfm=2, method = 'full'):
-        if isinstance(cm_slideshow, cm.IMAGE):
-            if isinstance(cm_slideshow.wfm, list):
-                wfm = cm_slideshow.wfm[N]
-            else:
-                wfm = cm_slideshow.wfm   
-            utils.command('bs_disp_' + method + ' ' + str(wfm), 'sub')
-        else: 
-            utils.command('bs_disp_' + method + ' ' + str(wfm), 'sub')
-
-    '''
-    Turns the text string into an image file, then saves the image file and returns the filepath
-
-    ARGUMENTS
-    text_String: str (the text to be converted to an image)
-    font: str (the font of the text)
-    font_Size: str (the text size)
-    img_Blank: img (the blank image to write to)
-    offset (optional): list(int, int) (the text offset in the image)
-
-    RETURNS
-    tmp: str (the filepath of the image created)
-    '''
-    def text_to_image(self, text_String, font, font_Size, img_Blank, offset = (10, 10)):
-        img = Image.open(img_Blank)
-        I1 = ImageDraw.Draw(img)
-        I1.fontmode = "1"
-        myFont = ImageFont.truetype(r"/mnt/mmc/images/charmr/TrueTypeFonts/" + font, font_Size)
-        I1.text(offset, text_String, font=myFont, fill=0)
-        tmp = self.directory + "tmp.pgm"    
-        img.save(tmp)
-        return tmp  
-
-    '''
-    Loads and displays the current time
-    '''
-    def display_clock(self, arg = "check"):
-        
-        current_time = utils.clock()
-
-        if   cm.wsize == 1440: time_Written = self.text_to_image(current_time[0], "Sans_Monofonto.otf", 52, self.directory + "blank_time.pgm", (10,7))
-        elif cm.wsize == 1264: time_Written = self.text_to_image(current_time[0], "Sans_Monofonto.otf", 42, self.directory + "blank_time.pgm", (0,10))
-        
-        if current_time[1] < 10:
-            self.load_area(time_Written, cm.area.clock[0])
-        else: 
-            self.load_area(time_Written, cm.area.clock[1])
-        if arg != "load":
-            self.display(self.wfm_disp['text'], "part")
 
     '''
     Displays the images across the screen in the direction defined by the user.
@@ -371,7 +262,7 @@ class Display():
         with open("swipe.txt", "w") as f:
             f.write("SET_ROT " + str(rot*90) + " \n")
             if style == 'clear' or style == 'clear only':
-                f.write("LD_IMG " + directory + "white240.pgm\n")
+                f.write("LD_IMG " + self.directory + "white240.pgm\n")
             i = 0; j = 0 # i: image, j: clear
             i_iteration = 1
             width = int(math.ceil(1440/16))
@@ -479,7 +370,7 @@ class Display():
         if os.path.exists("swipe.txt"): # Checks if tiler_module.py exists, deletes if it does. Then writes the module file.
             os.remove("swipe.txt")
         with open("swipe.txt", "w") as f:
-            f.write("LD_IMG " + directory + "white240.pgm\n")
+            f.write("LD_IMG " + self.directory + "white240.pgm\n")
             n = 0; m = 0 # blank iteration count, analagous to i
             f.write("SET_ROT " + str(rot*90) + " \n")
             iwidth = 0; iheight = 0
@@ -519,6 +410,122 @@ class Display():
                     
         subprocess.call("SET_SPECIFIC_TEMP=25 PWRDOWN_DELAY=10 /mnt/mmc/api/tools/cmder /mnt/mmc/api/tools/swipe.txt", shell=True)
 
+
+    '''
+    The main menu screen
+    '''
+    def display_main_menu(self):
+        self.clear("text")
+
+        self.load(self.directory + "tmp_mainmenu.pgm", 1)  
+        #self.display_clock("load")
+        # BUTTONS(main, 'no display')      
+        self.load_area(cm.banner.file, (0,80), cm.banner.rot)
+        
+        # if os.path.exists("tmp.txt"): 
+        #     os.remove("tmp.txt")
+        with open("tmp.txt", "w") as f: # Need cmder code to get all the main menu regions to display at once
+            f.write("SET_ROT 90 \n")
+            f.write("UPD_PART_AREA " + str(self.wfm_disp['text']))
+            f.write(" 0 " + str(int(math.floor(.00000*cm.hsize))) + " " + str(cm.wsize) + " " + str(int(math.floor(.04115*cm.hsize))) + "\n") # HEADER
+            f.write("UPD_PART_AREA " + str(self.wfm_disp['text']))
+            f.write(" 0 " + str(int(math.floor(.15625*cm.hsize))) + " " + str(cm.wsize) + " " + str(int(math.floor(.73750*cm.hsize))) + "\n") # BODY
+            f.write("UPD_PART_AREA " + str(self.wfm_disp['strd']))
+            f.write(" 0 " + str(int(math.floor(.89375*cm.hsize))) + " " + str(cm.wsize) + " " + str(int(math.floor(.10625*cm.hsize))) + "\n") # FOOTER
+            f.write("UPD_PART_AREA " + str(cm.banner.wfm))
+            f.write(" 0 " + str(int(math.floor(.04167*cm.hsize))) + " " + str(cm.wsize) + " " + str(int(math.floor(.11458*cm.hsize))) + "\n") # BANNER 
+        subprocess.call("/mnt/mmc/api/tools/cmder /mnt/mmc/api/tools/tmp.txt", shell=True)
+
+    '''
+    Loads the given image.
+
+    ARGUMENTS
+    img: IMAGE (the image being loaded from the charmr module file)
+    rot (optional): int (rotation of image)
+    '''
+    def load(self, img, rot=1):
+        self.rotation_Current = rot
+        print('bs_load_img ' + str(rot) + ' ' + str(img))
+        #os.system('bs_load_img ' + str(rot) + ' ' + str(img))
+        subprocess.call('bs_load_img ' + str(rot) + ' ' + str(img), shell = True, close_fds=True)
+        print("called")
+
+    '''
+    Loads only a specified area of the screen with the given image.
+
+    ARGUMENTS
+    img: IMAGE (the image being loaded from the charmr module file)
+    rot: int (rotation of image)
+    pos: list(int, int) (where on the screen the image should be loaded)
+    '''
+    def load_area(self, img, pos, rot=1):
+        X = ' '; SSX = cm.hsize; SSY = cm.wsize
+        if   str(rot) == '1':
+            subprocess.call('bs_load_img_area ' + str(rot) +X+ str(pos[0]) +X+ str(pos[1]) +X+ str(img), shell = True)
+        elif str(rot) == '0':
+            subprocess.call('bs_load_img_area ' + str(rot) +X+ str(SSY - pos[1]) +X+ str(pos[0]) +X+ str(img), shell = True)
+        elif str(rot) == '2':
+            subprocess.call('bs_load_img_area ' + str(rot) +X+ str(pos[1]) +X+ str(SSX - pos[0]) +X+ str(img), shell = True)
+        elif str(rot) == '3': 
+            subprocess.call('bs_load_img_area ' + str(rot) + ' ' + str(SSX - pos[0]) + ' ' + str(SSY - pos[1]) + ' ' + str(img), shell = True)
+
+    '''
+    Displays the given image.
+
+    ARGUMENTS
+    img: IMAGE (the image being displayed from the charmr module file)
+    method (optional): str (display type - cmder specification)
+    '''
+    def display(self, slideshow, wfm=2, method = 'full'):
+        if isinstance(slideshow.cm_slideshow, cm.IMAGE):
+            if isinstance(slideshow.cm_slideshow.wfm, list):
+                wfm = slideshow.cm_slideshow.wfm[slideshow.cur_slide]
+            else:
+                wfm = slideshow.cm_slideshow.wfm   
+            utils.command('bs_disp_' + method + ' ' + str(wfm), 'sub')
+        else: 
+            utils.command('bs_disp_' + method + ' ' + str(wfm), 'sub')
+
+    '''
+    Turns the text string into an image file, then saves the image file and returns the filepath
+
+    ARGUMENTS
+    text_String: str (the text to be converted to an image)
+    font: str (the font of the text)
+    font_Size: str (the text size)
+    img_Blank: img (the blank image to write to)
+    offset (optional): list(int, int) (the text offset in the image)
+
+    RETURNS
+    tmp: str (the filepath of the image created)
+    '''
+    def text_to_image(self, text_String, font, font_Size, img_Blank, offset = (10, 10)):
+        img = Image.open(img_Blank)
+        I1 = ImageDraw.Draw(img)
+        I1.fontmode = "1"
+        myFont = ImageFont.truetype(r"/mnt/mmc/images/charmr/TrueTypeFonts/" + font, font_Size)
+        I1.text(offset, text_String, font=myFont, fill=0)
+        tmp = self.directory + "tmp.pgm"    
+        img.save(tmp)
+        return tmp  
+
+    '''
+    Loads and displays the current time
+    '''
+    def display_clock(self, arg = "check"):
+        
+        current_time = utils.clock()
+
+        if   cm.wsize == 1440: time_Written = self.text_to_image(current_time[0], "Sans_Monofonto.otf", 52, self.directory + "blank_time.pgm", (10,7))
+        elif cm.wsize == 1264: time_Written = self.text_to_image(current_time[0], "Sans_Monofonto.otf", 42, self.directory + "blank_time.pgm", (0,10))
+        
+        if current_time[1] < 10:
+            self.load_area(time_Written, cm.area.clock[0])
+        else: 
+            self.load_area(time_Written, cm.area.clock[1])
+        if arg != "load":
+            self.display(self.wfm_disp['text'], "part")
+
     def display_sketch_app(self):
         #def F_sketch(arg = None):
         """
@@ -539,26 +546,11 @@ class Display():
         self.load(slideshow) # Reload the slideshow slide #N
         self.display_area(slideshow, (0,80), (1440,1715)) #Redisplay the background slideshow     
 
-        # if slideshow.wfm[N] == 3: # Only use highlighter on black and white text images
-        #     LOAD("/mnt/mmc/images/charmr/1440x1920/highlighter.pgm")   
-        #     DISPLAY(2, 'full')
-        #     LOAD(slideshow)
-        #     DISPLAY_AREA(6, (0,80), (1440,1715))
-        #     converted = PP1_22_40C(slideshow.path + slideshow.file[N], 'text', 'pen') # color_convert.PP1_22_40C() for this GAL3 .wbf       
-        #     # highlight_sketch.txt calls Jaya's ACeP sketch program. The background image is loaded as tmp_converted
-        #     # This means that the color_convert function must be run regardless of the current wfm
-        #     os.system("FULL_WFM_MODE=2 PART_WFM_MODE=1 /mnt/mmc/api/tools/acepsketch /mnt/mmc/application/sketch/sketch_highlighter.txt")
-        # else: # else use draw
-        #     LOAD("/mnt/mmc/images/charmr/1440x1920/draw.pgm")   
-        #     DISPLAY(2, 'full')
-        #     converted = PP1_22_40C(slideshow.path + slideshow.file[N], 'strd', 'fast') # color_convert.PP1_22_40C() for this GAL3 .wbf       
-        #     os.system("FULL_WFM_MODE=2 PART_WFM_MODE=1 /mnt/mmc/api/tools/acepsketch /mnt/mmc/application/sketch/sketch_draw.txt")  
-            
-        # F_pause() # Go back to pause when finished
-
-            # def slideshow_progression(self, slideshow, slide_number=-1):
     
     def display_pause(self, slideshow):
+
+        N = slideshow.cur_slide
+        cm_info = slideshow.cm_slideshow
         #def F_pause(): # Pauses the slideshow, pops up settings, and flashes an options banner
         """
         Opens a pause screen and waits for user input.
@@ -569,9 +561,9 @@ class Display():
         if device.sect == 'psettings': # coming back from psettings menu
             self.load(slideshow) # Reload the slideshow slide #N
             self.display(slideshow, 'part') #Redisplay the background slideshow     
-        self.current_application = 'pause'
+
         
-        if slideshow.wfm[N] == 3:
+        if cm_info.wfm[N] == 3:
             self.load(self.directory + "pause_highlight2.pgm")
         else: 
             self.load(self.directory + "pause_draw2.pgm")
@@ -580,42 +572,26 @@ class Display():
         self.load_area(tmp, (3,0))
 
         if   device.slide == 'bght':
-            self.load_area(directory + 'label_brightness.pgm', (616,1718))   
-            BUTTONS(bght, 'no display', directory + "check_brightness2.pgm", directory + "uncheck_brightness2.pgm") 
+            self.load_area(self.directory + 'label_brightness.pgm', (616,1718))   
+            BUTTONS(bght, 'no display', self.directory + "check_brightness2.pgm", self.directory + "uncheck_brightness2.pgm") 
         elif device.slide == 'temp':
-            self.load_area(directory + 'label_temperature.pgm', (616,1718))   
-            BUTTONS(temp, 'no display', directory + "check_brightness2.pgm", directory + "uncheck_brightness2.pgm") 
+            self.load_area(self.directory + 'label_temperature.pgm', (616,1718))   
+            BUTTONS(temp, 'no display', self.directory + "check_brightness2.pgm", self.directory + "uncheck_brightness2.pgm") 
         
         # ----- DISPLAYING PAUSE CONTENT ------------
         if slideshow.wfm[N] == wfm_Disp.best: 
-            DISPLAY(wfm_Disp.best, 'full') 
+            self.display(wfm_Disp.best, 'full') 
         if slideshow.wfm[N] == wfm_Disp.fast: 
-            DISPLAY(wfm_Disp.fast, 'full')  
+            self.display(wfm_Disp.fast, 'full')  
         if slideshow.wfm[N] == wfm_Disp.text:
-            DISPLAY(wfm_Disp.strd, 'full')
+            self.display(wfm_Disp.strd, 'full')
         if slideshow.wfm[N] == wfm_Disp.strd: 
-            DISPLAY(wfm_Disp.strd, 'full')
+            self.display(wfm_Disp.strd, 'full')
             
         img = Image.open(slideshow.path + slideshow.file[N]) # save the current slide to sketch directory for loading
         tmp = "/mnt/mmc/application/sketch/tmp.pgm"    
         img.save(tmp)       
-            
-        # ----- WAITING FOR INPUT ----------
-        while True:
-            GET_INPUT()
-            if touch:  
-                if   TOUCH_ZONE(TOUCH_DICT['slider']): 
-                    if   device.slide == 'bght': F_brightness()
-                    elif device.slide == 'temp': F_temperature()
-                elif TOUCH_ZONE(TOUCH_DICT['brightness_button']): BUTTON_BRIGHTNESS()
-                elif TOUCH_ZONE(TOUCH_DICT['temperature_button']): BUTTON_TEMPERATURE()   
-                elif TOUCH_ZONE(TOUCH_DICT['sketch_button']): F_sketch()
-                elif TOUCH_ZONE(TOUCH_DICT['settings_button']): F_psettings()
-                else: F_slideshow(menu.sshw.check+1, N-1)
-            if button:
-                if button == 'enter': break
-                if button == 'up':    CHANGE_SLIDE("back", slideshow.styl); break
-                if button == 'down':  CHANGE_SLIDE("next", slideshow.styl); break
+
             
     def window_header(self, text):
         header = self.text_to_image(text, 'Sans_ZagReg.otf', 60, self.directory + "blank_window_header.pgm")

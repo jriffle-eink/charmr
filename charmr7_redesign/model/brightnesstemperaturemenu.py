@@ -8,21 +8,19 @@ sys.path.append('cmodule')
 
 import charmr_module as cm
 
-import utils
+import utils as utils
 
 '''
 Controls the brightness and temperature settings of the demo
 '''
 class BrightnessTemperatureMenu(BaseMenu):
-    def __init__(self, check_file="check_brightness2.pgm", uncheck_file="uncheck_brightness2.pgm"):
+    def __init__(self, view, check_file="check_brightness2.pgm", uncheck_file="uncheck_brightness2.pgm"):
 
-        self.check_file = check_file
-        self.uncheck_file = uncheck_file
-        self.locations = [0]*10
+        locations = [0]*10
         for i in range(10):
             self.locations = (476+(i*49), 1772)
 
-        super(BrightnessTemperatureMenu, self).__init__()#locations_list, check_file, uncheck_file)
+        super(BrightnessTemperatureMenu, self).__init__(locations, view, check_file, uncheck_file)#locations_list, check_file, uncheck_file)
 
         # The type of menu being worked with. If 'bght', the brightness of the demo nwill be modified by any given function. If 'temp', the
         # temperature will be modified.
@@ -142,8 +140,11 @@ class BrightnessTemperatureMenu(BaseMenu):
     def select_type(self, selected):
         if selected == "bght":
             self.cur_type = "bght"
+            self.view.display_brightness()
+
         elif selected == "temp":
             self.cur_type = "temp"
+            self.view.display_temp()
 
     '''
     Sets the brightness of the demo
@@ -169,7 +170,7 @@ class BrightnessTemperatureMenu(BaseMenu):
         subprocess.call("AURORA_UPDATE=off aurora3 set_brt 2 " + str(brt_val), shell=True)
         subprocess.call("aurora3 set_brt 1 " + str(brt_val), shell=True)
         
-        #menu.bght.check = brt/10 
+        self.view.change_checkmarked_option(self.locations, self.cur_check) 
 
     ''' 
     Sets the temperature of the demo
@@ -197,7 +198,7 @@ class BrightnessTemperatureMenu(BaseMenu):
         subprocess.call("AURORA_UPDATE=off aurora3 set_cur 3 " + str(temp1), shell=True)
         subprocess.call("aurora3 set_cur 4 " + str(temp2), shell=True)
         
-        # menu.temp.check = temp/10
+        self.view.change_checkmarked_option(self.locations, self.cur_check) 
 
 # if __name__ == "__main__":
 
