@@ -27,6 +27,8 @@ class Controller:
 
     def __init__(self): 
         
+        view = Display() 
+
         self.current_application = 'startup'
         
         self.startup = Startup()
@@ -35,9 +37,9 @@ class Controller:
         #self.bght_temp_menu = BrightnessTemperatureMenu() 
 
         # responsible for monitoring applications that can be launched from the main menu (currently, slideshows, sketch app, and main menu settings)
-        self.main_menu = MainMenu() # Builds menu, saves as temporary image
+        self.main_menu = MainMenu(view) # Builds menu, saves as temporary image
 
-        self.main_settings_menu = MainSettingsMenu()
+        self.main_settings_menu = MainSettingsMenu(view)
 
         self.slideshow = None
 
@@ -68,8 +70,43 @@ class Controller:
     Waits for user input. When input is recieved, sends input to correct processing function based on what the current application is.
     ''' 
     def run(self):
-        
-        self.run_main_menu()
+        while True:
+            user_input = utils.get_input()
+
+            if type(user_input) == list: # screen touched, checks for common touch zones first
+                
+                # below options only available on pause and main screens
+                if self.current_application in ['main', 'mainsettings', 'pause', 'pausesettings']:
+                    # these options can only be selected with touch (list)
+                    if utils.touch_zone(user_input, self.touch_dict['slider']):
+                        self.load_slider(user_input)
+
+                    elif utils.touch_zone(user_input, self.touch_dict['brightness_button']): 
+                        self.load_brightness()
+
+                    elif utils.touch_zone(user_input, self.touch_dict['temperature_button']):
+                        self.load_temperature()
+
+                    elif utils.touch_zone(user_input, self.touch_dict['sketch_button']):
+                         if self.current_application == 'pause' or 'pausesettings':
+                            self.load_sketch()
+
+                    elif utils.touch_zone(user_input, self.touch_dict['settings_button']): 
+                        if self.current_application == 'main' or 'pause':
+                            self.load_settings()
+
+                        elif self.current_application == 'mainsettings':
+                            self.load_main()
+
+                        elif self.current_application == 'pausesettings':
+                            self.load_pause()
+
+            # these menu-specific options can be selected by buttons or touch
+            elif type(user_input) == str or list:
+                func = self.components[self.current_application](user_input)
+
+                
+        # self.run_main_menu()
 
     '''
     Sets the current application to be the main menu and sends a command to display to load the appropriate screen.
@@ -89,7 +126,29 @@ class Controller:
             if processed_input == 'settings_button':
                 self.run_settings()
 
+    def send_msettings_input(self, user_input):
+        output = self.main_settings_menu.process_input(user_input)
 
+        slideshow_output = self.slideshow.process_settings_output(output)
+
+        # need to update current application
+
+        if slideshow_output == 'main':
+            self.current_application = 'main'
+        elif slideshow_output == 'pause':
+            self.current_application = 'pause'
+
+    def send_psettings_input(self, user_input):
+        output = self.slideshow.process_settings_input(user_input)
+        
+        slideshow_output = self.slideshow.process_settings_output(output)
+
+        # need to update current application
+
+        if slideshow_output == 'main':
+            self.current_application = 'main'
+        elif slideshow_output == 'pause':
+            self.current_application = 'pause'
     '''
     Sets the current application to the appropriate settings. If the user is currently in the 'main' application, changes the current application to main settings 
     ('msettings') and displays the appropriate screen by sending a command to the display class. If the user is currently in the 'pause' application, changes the 
