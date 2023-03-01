@@ -97,24 +97,26 @@ class Display():
     disp (optional): bool (whether or not the checkmark will be displayed)
     '''
     def change_checkmarked_option(self, locations, cur_check, disp=True):
-        print("Loading new checkmark\n\n")
+
         if type(locations[0]) == int:
+
             if cur_check == 1:
                 subprocess.call('bs_load_img_area ' + str(cm.check.rot) + " " + str(locations[0]) + " " + str(locations[1]) + " " + cm.check.file, shell = True)
             else:     
                 subprocess.call('bs_load_img_area ' + str(cm.uncheck.rot) + " " + str(locations[0]) + " " + str(locations[1]) + " " + cm.uncheck.file, shell = True)  
+
             if disp: 
                 self.display(cm.check, 'part')
+ 
             return
 
         for i in range(len(locations)): # Finds the checked value (1) and makes all other buttons unchecked (0)
-            print(i)
+
             if i != cur_check:
-                print("Not checked")
                 subprocess.call('bs_load_img_area ' + str(cm.uncheck.rot) + " " + str(locations[i][0]) + " " + str(locations[i][1]) + " " + cm.uncheck.file, shell = True)
             else:
-                print("checked")
                 subprocess.call('bs_load_img_area ' + str(cm.check.rot) + " " + str(locations[i][0]) + " " + str(locations[i][1]) + " " + cm.check.file, shell = True)  
+
         if disp: 
             self.display(cm.check, wfm = cm.check.wfm, method = 'part')
 

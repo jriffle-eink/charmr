@@ -70,7 +70,6 @@ def get_input(swipe = None, t=None): # Optional t input is the timeout, meant fo
         return touch
     
     elif button_proc.returncode is not None: 
-        print("BUTTON")
         button, err = button_proc.communicate(); 
         button = int(button); touch = None
         if   button == 1: button = 'up'

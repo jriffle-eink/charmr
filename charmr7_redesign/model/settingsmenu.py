@@ -1,13 +1,12 @@
-
 from basemenu import BaseMenu
 import charmr_module as cm
 import utils as utils
 
 class SettingsMenu(BaseMenu):
 
-    def __init__(self, locations, display, check_file=str(cm.check.file), uncheck_file=str(cm.uncheck.file)):
+    def __init__(self, view, locations, check_file=str(cm.check.file), uncheck_file=str(cm.uncheck.file)):
 
-        super(SettingsMenu, self).__init__(locations, display, check_file, uncheck_file)#locations, check_file, uncheck_file)  
+        super(SettingsMenu, self).__init__(view, locations, check_file, uncheck_file)
 
 
         self.general_touch_dict={
@@ -50,6 +49,6 @@ class SettingsMenu(BaseMenu):
 
             if utils.touch_zone(user_input, touch_dict[elem]):
 
-                self.display.settings_app_display(app_type)
+                self.view.settings_app_display(app_type)
 
                 return elem
