@@ -11,25 +11,27 @@ Responsible for monitoring the state of the main menu/launching any main-menu re
 '''
 class MainMenu(BaseMenu):
     
-    def __init__(self, check_file=cm.check.file, uncheck_file=cm.uncheck.file):
+    def __init__(self, view, check_file=cm.check.file, uncheck_file=cm.uncheck.file):
 
         self.check_file = check_file
         self.uncheck_file = uncheck_file
+        
+        self.tmp_name = 'mainmenu'
 
         # build the menu locations
-        self.locations = self.menu_build("main", '_mainmenu') 
+        self.locations = self.menu_build("main", self.tmp_name)
         
-        self.view = Display()
+        self.view = view
 
-        super(MainMenu, self).__init__(self.locations, self.check_file, self.uncheck_file)        
+        super(MainMenu, self).__init__(self.view, self.locations, self.check_file, self.uncheck_file)
         super(MainMenu, self).menu_locations(self.locations, 0)
-        
+                
         # the class responsible for monitoring main menu settings
-        self.main_settings_menu = MainSettingsMenu()
+        # self.main_settings_menu = MainSettingsMenu(self.view)
         
     def display(self):
-        
-        self.view.display_main_menu() # loads and displays using cmder
+                
+        self.view.display_main_menu(self.tmp_name) # loads and displays using cmder
         
         self.change_checkmark()
     
@@ -69,43 +71,9 @@ class MainMenu(BaseMenu):
 
     RETURN
     '''
-    def process_input(self, user_input):
+    def process_input(self, user_input): pass
         
-        if type(user_input) == list: # screen touched, checks for common touch zones first
-            
-            # these options can only be selected with touch (list)
-            if utils.touch_zone(user_input, self.touch_dict['slider']): pass
-                #self.load_slider(user_input)
-            elif utils.touch_zone(user_input, self.touch_dict['brightness_button']): pass
-                #self.load_brightness()
-            elif utils.touch_zone(user_input, self.touch_dict['temperature_button']): pass
-                #self.load_temperature()
-            elif utils.touch_zone(user_input, self.touch_dict['sketch_button']):
-                 return 'sketch_button'
-            elif utils.touch_zone(user_input, self.touch_dict['settings_button']):     
-                 return 'settings_button'  
 
-
-        # these menu-specific options can be selected by buttons
-        elif type(user_input) == str: # button press
-                            
-            if user_input in ['up','down']:
-                super(MainMenu, self).buttons(user_input) # change the buttons appropriately
-
-                self.change_checkmark()
-                
-            elif user_input == 'enter':
-                pass            
- 
-        elif type(user_input) == list: # Screen touched           
-            selection = self.menu_touch(user_input)
- 
-            if selection: 
-                selection = self.app_selector(selection)
-                
-                return selection
-        
-            else: return None
 
     '''
     Selects the application based on the number given NOTE: remove hardcoding, allow for N number of arguments to select up to 

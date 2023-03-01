@@ -92,24 +92,26 @@ class Display():
     disp (optional): bool (whether or not the checkmark will be displayed)
     '''
     def change_checkmarked_option(self, locations, cur_check, disp=True):
-        print("Loading new checkmark\n\n")
+
         if type(locations[0]) == int:
+
             if cur_check == 1:
                 subprocess.call('bs_load_img_area ' + str(cm.check.rot) + " " + str(locations[0]) + " " + str(locations[1]) + " " + cm.check.file, shell = True)
             else:     
                 subprocess.call('bs_load_img_area ' + str(cm.uncheck.rot) + " " + str(locations[0]) + " " + str(locations[1]) + " " + cm.uncheck.file, shell = True)  
+
             if disp: 
                 self.display(cm.check, 'part')
+ 
             return
 
         for i in range(len(locations)): # Finds the checked value (1) and makes all other buttons unchecked (0)
-            print(i)
+
             if i != cur_check:
-                print("Not checked")
                 subprocess.call('bs_load_img_area ' + str(cm.uncheck.rot) + " " + str(locations[i][0]) + " " + str(locations[i][1]) + " " + cm.uncheck.file, shell = True)
             else:
-                print("checked")
                 subprocess.call('bs_load_img_area ' + str(cm.check.rot) + " " + str(locations[i][0]) + " " + str(locations[i][1]) + " " + cm.check.file, shell = True)  
+
         if disp: 
             self.display(cm.check, wfm = cm.check.wfm, method = 'part')
 
@@ -214,25 +216,20 @@ class Display():
     '''
     The main menu screen
     '''
-    def display_main_menu(self):
-        self.clear("text")
+    def display_main_menu(self, tmp_name):
 
-        self.load(self.directory + "tmp_mainmenu.pgm", 1)  
-        #self.display_clock("load")
-        # BUTTONS(main, 'no display')      
+        self.load(self.directory + "tmp_" + tmp_name + ".pgm", 1)  
         self.load_area(cm.banner.file, (0,80), cm.banner.rot)
         
-        # if os.path.exists("tmp.txt"): 
-        #     os.remove("tmp.txt")
         with open("tmp.txt", "w") as f: # Need cmder code to get all the main menu regions to display at once
             f.write("SET_ROT 90 \n")
-            f.write("UPD_PART_AREA " + str(self.wfm_disp['text']))
+            f.write("UPD_FULL_AREA " + str(self.wfm_disp['text']))
             f.write(" 0 " + str(int(math.floor(.00000*cm.hsize))) + " " + str(cm.wsize) + " " + str(int(math.floor(.04115*cm.hsize))) + "\n") # HEADER
-            f.write("UPD_PART_AREA " + str(self.wfm_disp['text']))
+            f.write("UPD_FULL_AREA " + str(self.wfm_disp['text']))
             f.write(" 0 " + str(int(math.floor(.15625*cm.hsize))) + " " + str(cm.wsize) + " " + str(int(math.floor(.73750*cm.hsize))) + "\n") # BODY
-            f.write("UPD_PART_AREA " + str(self.wfm_disp['strd']))
+            f.write("UPD_FULL_AREA " + str(self.wfm_disp['strd']))
             f.write(" 0 " + str(int(math.floor(.89375*cm.hsize))) + " " + str(cm.wsize) + " " + str(int(math.floor(.10625*cm.hsize))) + "\n") # FOOTER
-            f.write("UPD_PART_AREA " + str(cm.banner.wfm))
+            f.write("UPD_FULL_AREA " + str(cm.banner.wfm))
             f.write(" 0 " + str(int(math.floor(.04167*cm.hsize))) + " " + str(cm.wsize) + " " + str(int(math.floor(.11458*cm.hsize))) + "\n") # BANNER 
         subprocess.call("/mnt/mmc/api/tools/cmder /mnt/mmc/api/tools/tmp.txt", shell=True)
 
@@ -245,10 +242,7 @@ class Display():
     '''
     def load(self, img, rot=1):
         self.rotation_Current = rot
-        print('bs_load_img ' + str(rot) + ' ' + str(img))
-        #os.system('bs_load_img ' + str(rot) + ' ' + str(img))
         subprocess.call('bs_load_img ' + str(rot) + ' ' + str(img), shell = True, close_fds=True)
-        print("called")
 
     '''
     Loads only a specified area of the screen with the given image.

@@ -12,6 +12,7 @@ from PIL import Image, ImageDraw, ImageFont, ImageEnhance
 import utils as utils
 from model.brightnesstemperaturemenu import BrightnessTemperatureMenu
 import model.basemenu
+from view import Display
 from model.startup import Startup
 from model.mainmenu import MainMenu
 from model.mainsettingsmenu import MainSettingsMenu
@@ -27,20 +28,20 @@ class Controller:
 
     def __init__(self): 
         
-        view = Display() 
+        self.view = Display() 
 
         self.current_application = 'startup'
         
-        self.startup = Startup()
+        #self.startup = Startup()
                 
         # responsible for monitoring the brightness/temperature of the demo
         #self.bght_temp_menu = BrightnessTemperatureMenu() 
 
         # responsible for monitoring applications that can be launched from the main menu (currently, slideshows, sketch app, and main menu settings)
-        self.main_menu = MainMenu(view) # Builds menu, saves as temporary image
+        self.main_menu = MainMenu(self.view) # Builds menu, saves as temporary image
 
-        self.main_settings_menu = MainSettingsMenu(view)
-
+        self.main_settings_menu = MainSettingsMenu(self.view)
+        
         self.slideshow = None
 
         # to be implemented
@@ -69,62 +70,98 @@ class Controller:
     '''
     Waits for user input. When input is recieved, sends input to correct processing function based on what the current application is.
     ''' 
-    def run(self):
-        while True:
-            user_input = utils.get_input()
-
-            if type(user_input) == list: # screen touched, checks for common touch zones first
-                
-                # below options only available on pause and main screens
-                if self.current_application in ['main', 'mainsettings', 'pause', 'pausesettings']:
-                    # these options can only be selected with touch (list)
-                    if utils.touch_zone(user_input, self.touch_dict['slider']):
-                        self.load_slider(user_input)
-
-                    elif utils.touch_zone(user_input, self.touch_dict['brightness_button']): 
-                        self.load_brightness()
-
-                    elif utils.touch_zone(user_input, self.touch_dict['temperature_button']):
-                        self.load_temperature()
-
-                    elif utils.touch_zone(user_input, self.touch_dict['sketch_button']):
-                         if self.current_application == 'pause' or 'pausesettings':
-                            self.load_sketch()
-
-                    elif utils.touch_zone(user_input, self.touch_dict['settings_button']): 
-                        if self.current_application == 'main' or 'pause':
-                            self.load_settings()
-
-                        elif self.current_application == 'mainsettings':
-                            self.load_main()
-
-                        elif self.current_application == 'pausesettings':
-                            self.load_pause()
-
-            # these menu-specific options can be selected by buttons or touch
-            elif type(user_input) == str or list:
-                func = self.components[self.current_application](user_input)
-
-                
-        # self.run_main_menu()
+    def run(self):  
+                        
+        self.run_main_menu()
 
     '''
     Sets the current application to be the main menu and sends a command to display to load the appropriate screen.
     '''
     def run_main_menu(self):
-        if self.current_application == 'startup':
-            self.startup.clear()
         
-        self.current_application = 'main'
+        if self.current_application == 'startup':
+            self.view.clear("best")
+        
         self.main_menu.display()
         
+        self.menu = self.main_menu
+        
+        self.current_application = 'main'
+        
+        self.command_dict = {'slider': None,
+                             'brightness_button': None,
+                             'temperature_button': None,
+                             'sketch_button': None,
+                             'settings_button': self.run_settings,
+                             0: None,
+                             1: None,
+                             2: None,
+                             3: None,
+                             4: None
+                             }
+        
+        self.buttons = self.main_menu.buttons
+        
+        self.wait_for_input()
+        
+    '''
+    Sets the current application to the appropriate settings. If the user is currently in the 'main' application, changes the current application to main settings 
+    ('msettings') and displays the appropriate screen by sending a command to the display class. If the user is currently in the 'pause' application, changes the 
+    current application to the pause settings ('psettings') and displays the appropriate screen.
+    '''
+    def run_settings(self):
+
+        if self.current_application == 'main':
+            
+            self.main_settings_menu.display()
+            
+            self.menu = self.main_settings_menu
+            
+            self.command_dict = {'slider': None,
+                                 'brightness_button': None,
+                                 'temperature_button': None,
+                                 'sketch_button': None,
+                                 'settings_button': self.run_main_menu,
+                                 0: None,
+                                 1: None,
+                                 2: None,
+                                 3: None,
+                                 4: None
+                                 }
+            
+        else: pass
+    
+        self.current_application = 'settings'
+        
+        self.wait_for_input()
+        
+    def wait_for_input(self):
+    
         while True:
             
             user_input = utils.get_input()
-            processed_input = self.main_menu.process_input(user_input)
+
+            if type(user_input) == list: # screen touched, checks for common touch zones first
+
+                for key in self.command_dict:      
+
+                    if type(key) == str and utils.touch_zone(user_input, self.touch_dict[key]):
                         
-            if processed_input == 'settings_button':
-                self.run_settings()
+                        self.command_dict[key]()
+
+
+            # these menu-specific options can be selected by buttons
+            elif type(user_input) == str: # button press
+                                
+                if user_input in ['up','down']:
+                    
+                    self.menu.buttons(user_input) # change the buttons appropriately
+                    self.menu.change_checkmark()
+                    
+                elif user_input == 'enter': pass
+                    
+                    #super(MainMenu, self).cur_check     
+
 
     def send_msettings_input(self, user_input):
         output = self.main_settings_menu.process_input(user_input)
@@ -149,26 +186,7 @@ class Controller:
             self.current_application = 'main'
         elif slideshow_output == 'pause':
             self.current_application = 'pause'
-    '''
-    Sets the current application to the appropriate settings. If the user is currently in the 'main' application, changes the current application to main settings 
-    ('msettings') and displays the appropriate screen by sending a command to the display class. If the user is currently in the 'pause' application, changes the 
-    current application to the pause settings ('psettings') and displays the appropriate screen.
-    '''
-    def run_settings(self):
-        if self.current_application == 'main':
-            self.current_application = 'mainsettings'
-            self.main_settings_menu.display()
-            
-            while True:  
-                user_input = utils.get_input()            
-                processed_input = self.main_settings_menu.process_input(user_input)
-                                
-                if processed_input == 'settings_button':
-                    self.run_main_menu()
-                
-        elif self.current_application == 'pause':
-            self.current_application = 'pausesettings'
-            #self.display.display_pausesettings()
+    
 
     '''
     Displays the temp/brightness slider and sends the user input to the BrightnessTemperatureSlider class to change the brightness/temperature on the device.

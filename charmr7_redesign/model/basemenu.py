@@ -72,8 +72,8 @@ class BaseMenu(object):
             else: array[i] = 0
         matrix = [ [array[(col-row)%n] for col in range(n)] for row in range(n)] # Matrix defining the possible check button positions (identity matrix)
         # Here the column # is the button that is checked, while the row # is the initally selected button location
-        if   button_input == 'down':  matrix = [[array[(col-row-1)%n] for col in range(n)] for row in range(n)] 
-        elif button_input == 'up':    matrix = [[array[(col-row+1)%n] for col in range(n)] for row in range(n)]      
+        if   button_input == 'down':  matrix = [[array[(col-row-1)%n] for col in range(n)] for row in range(n)]
+        elif button_input == 'up':    matrix = [[array[(col-row+1)%n] for col in range(n)] for row in range(n)]  
         elif button_input == 'enter': select = self.cur_check # Enter/pause button
         # In this new matrix, the column # is the new button to be checked, while the row # is the previously checked location
 
@@ -187,7 +187,7 @@ class BaseMenu(object):
                 I1.text((xstart_Text, ystart + step*iteration), item, font=myFont, fill=0)
             button_List = [(xstart_button,ystart+buttonfont_Offset), (xstart_button,ystart+step+buttonfont_Offset), (xstart_button,ystart+(2*step)+buttonfont_Offset), (xstart_button,ystart+(3*step)+buttonfont_Offset), (xstart_button,ystart+(4*step)+buttonfont_Offset)]
         print("Menu " + name + " of length=" + str(len(items)) + " built")       
-        menu = directory + "tmp" + name + ".pgm" 
+        menu = directory + "tmp_" + name + ".pgm" 
         print("Saved to location: " + menu)
         img.save(menu)
         return button_List
