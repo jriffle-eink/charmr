@@ -78,8 +78,6 @@ class Slideshow():
 
             elif output[1] == 'slide': self.cur_slide = output[1]
 
-            elif output == 'pause' or 'main': return output
-
             else: self.replace_data(output[0], output[1], 'slideshow')
 
     def replace_data(self, data_Type, replacement, image):

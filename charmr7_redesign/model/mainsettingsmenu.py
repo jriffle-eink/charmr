@@ -123,39 +123,20 @@ class MainSettingsMenu(SettingsMenu):
     
         self.view.change_checkmarked_option(self.locations, self.cur_check)    
 
+    def display_go_to_slide(self):
+        self.view.load_go_to_slide()
 
     def process_input(self, user_input):
-        if self.cur_check == 0:
-            if type(user_input) == str: # Button pressed
-                                
-                if user_input in ['up', 'down']:
-                    self.buttons(user_input) # change the buttons appropriately
-                    self.view.change_checkmarked_option(self.locations, self.cur_check) 
-                    
-                elif user_input == 'enter':
-                    #selection = self.cur_check
-                    self.view.display_msetting_submenu(self.cur_check)
-    
-            elif type(user_input) == list: # Screen touched           
-                self.cur_check = self.menu_touch(user_input)
+        if utils.touch_zone(user_input, self.general_touch_dict['exit']):
+            self.cur_check = 0
+            return 'main'
 
-                if self.cur_check == 4:
-                    self.restart()
+        elif utils.touch_zone(user_input, self.general_touch_dict['back']):
+            self.cur_check = 0
+            self.view.display_msettings()
 
-        else:
-            if utils.touch_zone(user_input, self.general_touch_dict['exit']):
-                self.cur_check = 0
-                return 'main'
-
-            elif utils.touch_zone(user_input, self.general_touch_dict['back']):
-                self.cur_check = 0
-                self.view.display_msettings()
-
-            elif self.cur_check == 4:
-                self.restart()
-
-            else: 
-                return self.run_app(user_input)
+        else: 
+            return self.run_app(user_input)
 
             
  
@@ -166,7 +147,8 @@ class MainSettingsMenu(SettingsMenu):
         elif self.cur_check == 2:
             self.retrieve_output(user_input, self.wfm_touch_dict, 'wfm')
         elif self.cur_check == 3:
-            self.user_mode_change(user_input)
+            pass
+            #self.user_mode_change(user_input)
 
 
     def launch_sketch_app(self):

@@ -35,7 +35,7 @@ class Controller:
         #self.startup = Startup()
                 
         # responsible for monitoring the brightness/temperature of the demo
-        self.bght_temp_menu = BrightnessTemperatureMenu() 
+        self.bght_temp_menu = BrightnessTemperatureMenu(self.view) 
 
         # responsible for monitoring applications that can be launched from the main menu (currently, slideshows, sketch app, and main menu settings)
         self.main_menu = MainMenu(self.view) # Builds menu, saves as temporary image
@@ -116,11 +116,36 @@ class Controller:
             self.main_settings_menu.display()
             
             self.menu = self.main_settings_menu
+
+            self.current_application = 'mainsettings'
             
             self.command_dict = {'slider': None,
                                  'brightness_button': None,
                                  'temperature_button': None,
                                  'sketch_button': None,
+                                 'settings_button': self.run_main_menu,
+                                 0: self.main_settings_menu.display_go_to_slide,
+                                 1: self.main_settings_menu.display_wfm,
+                                 2: self.main_settings_menu.display_demo_mode,
+                                 3: None, # restart
+                                 4: None
+                                 }
+            
+        elif self.current_application == 'pause':
+
+            #self.main_settings_menu.display()
+            
+            #self.menu = self.pause_settings_menu
+
+            self.current_application = 'pausesettings'
+            
+            self.command_dict = {'slider': None,
+                                 'brightness_button': None,
+                                 'temperature_button': None,
+                                 'sketch_button': None,        
+                                    #since demo was in a menu when the sketch button was pressed, remove the menu by reloading  and displaying the slide
+                                    #self.view.load(self.slideshow) # Reload the slideshow slide #N
+                                    #self.view.display_area(self.slideshow, (0,80), (1440,1715)) #Redisplay the background slideshow   ,
                                  'settings_button': self.run_main_menu,
                                  0: None,
                                  1: None,
@@ -128,13 +153,45 @@ class Controller:
                                  3: None,
                                  4: None
                                  }
-            
-        else: pass
     
         self.current_application = 'settings'
         
-        self.wait_for_input()
+        #self.wait_for_input()
+
+        # because settings submenus are not traditional menus
+        self.wait_for_settings_input()
         
+    def wait_for_settings_input(self):
+    
+        while True:
+            
+            user_input = utils.get_input()
+
+            if type(user_input) == list: # screen touched, checks for common touch zones first
+                output = self.main_settings_menu.process_input(user_input)
+
+                if output != None:
+                    if output == 'pause':
+                        self.current_application = 'pause'
+                        # display pause
+                    elif output == 'main'
+                    self.current_application = 'main'
+                    self.main_menu.display()
+
+                    else: self.slideshow.process_input()
+                
+            # # these menu-specific options can be selected by buttons
+            # elif type(user_input) == str: # button press
+                                
+            #     if user_input in ['up','down']:
+                    
+            #         self.menu.buttons(user_input) # change the buttons appropriately
+            #         self.menu.change_checkmark()
+                    
+            #     elif user_input == 'enter': pass
+                    
+            #         #super(MainMenu, self).cur_check  
+
     def wait_for_input(self):
     
         while True:
@@ -163,29 +220,33 @@ class Controller:
                     #super(MainMenu, self).cur_check     
 
 
-    def send_msettings_input(self, user_input):
-        output = self.main_settings_menu.process_input(user_input)
+    # def send_msettings_input(self, user_input):
+    #     output = self.main_settings_menu.process_input(user_input)
 
-        slideshow_output = self.slideshow.process_settings_output(output)
+    #     slideshow_output = self.slideshow.process_settings_output(output)
 
-        # need to update current application
+    #     # need to update current application
 
-        if slideshow_output == 'main':
-            self.current_application = 'main'
-        elif slideshow_output == 'pause':
-            self.current_application = 'pause'
+    #     if slideshow_output == 'main':
+    #         self.current_application = 'main'
+    #         self.main_menu.display()
+    #     elif slideshow_output == 'pause':
+    #         self.current_application = 'pause'
+    #         self.slideshow.display_pause()
 
-    def send_psettings_input(self, user_input):
-        output = self.slideshow.process_settings_input(user_input)
+    # def send_psettings_input(self, user_input):
+    #     output = self.slideshow.process_settings_input(user_input)
         
-        slideshow_output = self.slideshow.process_settings_output(output)
+    #     slideshow_output = self.slideshow.process_settings_output(output)
 
-        # need to update current application
+    #     # need to update current application
 
-        if slideshow_output == 'main':
-            self.current_application = 'main'
-        elif slideshow_output == 'pause':
-            self.current_application = 'pause'
+    #     if slideshow_output == 'main':
+    #         self.current_application = 'main'
+    #         self.main_menu.display()
+    #     elif slideshow_output == 'pause':
+    #         self.current_application = 'pause'
+    #         self.slideshow.display_pause()
     
 
     '''
