@@ -8,6 +8,10 @@ import subprocess
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageEnhance
 import utils
+sys.path.append('wfm_info')
+import wfm_mode_numbers # This should be a .json (if py3), otherwise a .py dictionary
+import wfm_display_times # This should be a .json (if py3), otherwise a .py dictionary
+
 
 '''
 This class is responsible for all visual renderings. The instrcutions for each display (main menu, pause, settings, slideshow) is broken up into distinct methods.
@@ -30,22 +34,13 @@ class Display():
         if cm.wsize == 1264 and cm.hsize == 1680: 
             self.directory = '/mnt/mmc/images/charmr/1264x1680/'
         
-        self.wfm_disp = { # we should make this a json file to import so it's easily accessible for changes
-            'init': 0,
-            'text': 3,
-            'fast': 4,
-            'strd': 2,
-            'best': 5, 
-            'DU': 1,
-            'DUIN': 6,
-            'DUOUT': 7,
-            }
+        self.wfm_disp  = wfm_mode_numbers.data
+        self.wfm_display_times = wfm_display_times.data
 
     def display_brightness(self):
         self.load_area(self.directory + 'label_brightness.pgm', (616,1718))
 
     def display_temp(self):
-        print('LOADING')
         self.load_area(self.directory + 'label_temperature.pgm', (616,1718))
 
     '''
@@ -60,16 +55,12 @@ class Display():
         
         self.load(self.directory + 'white240.pgm'); 
         
-        if flsh == 'full': wfm = " 0"
-        elif flsh == 'text': wfm = " 3"
-        elif flsh == 'fast': wfm = " 4" 
-        elif flsh == 'strd': wfm = " 2"
-        elif flsh == 'best': wfm = " 5"
-        
+        wfm = self.wfm_disp[flsh]
+
         if area != None:
-            subprocess.call("bs_disp_full_area" + wfm +" "+ str(area[0][0]) +" "+ str(area[0][1]) +" "+ str(area[1][0]-area[0][0]) +" "+ str(area[1][1]-area[0][1]), shell=True)
+            subprocess.call("bs_disp_full_area " + str(wfm) +" "+ str(area[0][0]) +" "+ str(area[0][1]) +" "+ str(area[1][0]-area[0][0]) +" "+ str(area[1][1]-area[0][1]), shell=True)
         else: 
-            subprocess.call("bs_disp_" + disp + " 5", shell = True)
+            subprocess.call("bs_disp_" + disp + " " + str(wfm), shell = True)
 
     '''
     The screen displayed on launch. Currently, it is the startup image
@@ -129,36 +120,10 @@ class Display():
         'center'out': Displays images center-out radially. Must be a part-display, so a CLEAR() function is automatically integrated in
         None:         Normal display
     '''
-    def change_slide(self, slideshow, direction,  style = None): #, style = None): # Moves to next slide of slideshow
+    def display_slide(self, slideshow, direction, prev=0, swipe='left', style=None): #, style = None): # Moves to next slide of slideshow
 
         cm_info = slideshow.cm_slideshow
 
-        if type(direction) == int: 
-            slideshow.cur_slide = direction # direction can be 'back' or 'next', or an integer will change to that slide number   
-            return
-        elif direction == "next": 
-            slideshow.cur_slide += 1; prev = -1; swipe = 'left'
-            if slideshow.cur_slide >= slideshow.length: 
-                self.clear("full"); 
-                self.display_main_menu()
-            self.load(slideshow)
-        elif direction == "back":
-            slideshow.cur_slide -= 1; prev = 1; swipe = 'right'
-            if slideshow.cur_slide < 0: slideshow.cur_slide = 0 # If already on first slide, remain therels.touch_zone
-            self.load(slideshow)
-        elif direction == "back two":
-            slideshow.cur_slide -= 2; prev = 2; swipe = 'right'
-            if slideshow.cur_slide < 0: slideshow.cur_slide = 0 # If already on first slide, remain there
-            self.load(slideshow)    
-        elif direction == "remain": 
-            if style == None:
-                self.display(cm_info, cm_info.disp[slideshow.cur_slide])            
-            if style == "swipe":
-                self.display_swipe(slideshow, "left", self.wfm_disp['text'])    
-            if style == 'center-out':
-                self.display_center_out(slideshow, cm_info.wfm[slideshow.cur_slide])
-            return
-        # --------------------------------------------------------------------------- 
         if cm_info.style == "swipe":    
             if   cm_info.wfm[slideshow.cur_slide] == self.wfm_disp['best']: # Best color
                 if   cm_info.wfm[slideshow.cur_slide+prev] == self.wfm_disp['best']: self.display_swipe(slideshow, swipe, 13)
@@ -228,35 +193,30 @@ class Display():
         'clear only': a white clear swipes accross the screen but the following image is displayed normally
     The user can choose the wfm# used in clearing the image by entering a wfm# integer for 'clear_WFM'
     '''
-    def display_swipe(self, slideshow, direction, delay, style = 'reg', clear_WFM = None, image_WFM = None):
+    def display_swipe(self, slideshow, direction, delay, style = 'reg', clear_wfm = None, image_wfm = None):
 
         #global N, i, iwidth, j, jwidth
 
         N = slideshow.cur_slide
-        rot = slideshow.rot[N]
-        clear_Detect = 0
+        rot = slideshow.cm_slideshow.rot[N]
+        clear_detect = 0
 
         cm_info = slideshow.cm_slideshow
         
-        if isinstance(clear_WFM, int): pass
-        elif self.auto[N] == 'yes':  clear_WFM = self.wfm_disp['best'] # Auto
-        elif self.flsh[N] == 'full': clear_WFM = self.wfm_disp['init']
-        elif self.flsh[N] == 'fast': clear_WFM = self.wfm_disp['fast']
-        elif self.self[N] == 'strd': clear_WFM = self.wfm_disp['strd']
-        elif self.flsh[N] == 'best': clear_WFM = self.wfm_disp['best']
+        if isinstance(clear_wfm, int): pass
+    
+        elif slideshow.cm_slideshow.auto[N] == 'yes':  clear_wfm = self.wfm_disp['best'] # Auto
+    
+        else: clear_wfm = self.wfm_disp[self.flsh[N]]
             
-        if clear_WFM == self.wfm_disp['init']: wfm_Time = 3541-100 # Assume it takes 100ms to load the image
-        if clear_WFM == self.wfm_disp['strd']: wfm_Time = 1024-100
-        if clear_WFM == self.wfm_disp['text']: wfm_Time = 377  # This is a fast enough flash, don't need to reduce the time
-        if clear_WFM == self.wfm_disp['fast']: wfm_Time = 518 -100
-        if clear_WFM == self.wfm_disp['best']: wfm_Time = 1518-100
+        wfm_time = self.wfm_display_times[clear_wfm] - 100 # 100ms buffer in the time
         
-        if isinstance(image_WFM, type(None)):
-            image_WFM = cm_info.wfm[N]
+        if isinstance(image_wfm, type(None)):
+            image_wfm = cm_info.wfm[N]
         
-        if os.path.exists("swipe.txt"):
-            os.remove("swipe.txt")
-        with open("swipe.txt", "w") as f:
+        if os.path.exists("/mnt/mmc/api/tools/swipe.txt"):
+            os.remove("/mnt/mmc/api/tools/swipe.txt")
+        with open("/mnt/mmc/api/tools/swipe.txt", "w") as f:
             f.write("SET_ROT " + str(rot*90) + " \n")
             if style == 'clear' or style == 'clear only':
                 f.write("LD_IMG " + self.directory + "white240.pgm\n")
@@ -272,26 +232,26 @@ class Display():
             def UPD_AREA_CLEAR(rot, direction):
                 if   rot == 1 or rot == 3:  
                     if   direction == "right":
-                        f.write("UPD_FULL_AREA " + str(clear_WFM) + " " + str(i) + " 0 " + str(iwidth) + " 1920 " + '\n')
+                        f.write("UPD_FULL_AREA " + str(clear_wfm) + " " + str(i) + " 0 " + str(iwidth) + " 1920 " + '\n')
                     elif direction == "left":
-                        f.write("UPD_FULL_AREA " + str(clear_WFM) + " " + str(cm.wsize - iwidth - i) + " 0 " + str(iwidth) + " 1920 " + '\n')
+                        f.write("UPD_FULL_AREA " + str(clear_wfm) + " " + str(cm.wsize - iwidth - i) + " 0 " + str(iwidth) + " 1920 " + '\n')
                 elif rot == 0 or rot == 2:
                     if direction == "right":
-                        f.write("UPD_FULL_AREA " + str(clear_WFM) + " 0 " + str(i) + " 1920 " + str(iwidth) + '\n')
+                        f.write("UPD_FULL_AREA " + str(clear_wfm) + " 0 " + str(i) + " 1920 " + str(iwidth) + '\n')
                     if direction == "left":
-                        f.write("UPD_FULL_AREA " + str(clear_WFM) + " 0 " + str(cm.wsize - iwidth - i) + " 1920 " + str(iwidth) + '\n')
+                        f.write("UPD_FULL_AREA " + str(clear_wfm) + " 0 " + str(cm.wsize - iwidth - i) + " 1920 " + str(iwidth) + '\n')
                             
             def UPD_AREA_IMAGE(rot, direction):
                 if   rot == 1 or rot == 3:  
                     if   direction == "right":
-                        f.write("UPD_FULL_AREA " + str(image_WFM) + " " + str(j) + " 0 " + str(jwidth) + " 1920 " + '\n') 
+                        f.write("UPD_FULL_AREA " + str(image_wfm) + " " + str(j) + " 0 " + str(jwidth) + " 1920 " + '\n') 
                     elif direction == "left":
-                        f.write("UPD_FULL_AREA " + str(image_WFM) + " " + str(cm.wsize - jwidth - j) + " 0 " + str(jwidth) + " 1920 " + '\n') 
+                        f.write("UPD_FULL_AREA " + str(image_wfm) + " " + str(cm.wsize - jwidth - j) + " 0 " + str(jwidth) + " 1920 " + '\n') 
                 elif rot == 0 or rot == 2:
                     if direction == "right":
-                        f.write("UPD_FULL_AREA " + str(image_WFM) + " 0 " + str(j) + " 1920 " + str(jwidth) + '\n')
+                        f.write("UPD_FULL_AREA " + str(image_wfm) + " 0 " + str(j) + " 1920 " + str(jwidth) + '\n')
                     if direction == "left":
-                        f.write("UPD_FULL_AREA " + str(image_WFM) + " 0 " + str(cm.wsize - jwidth - j) + " 1920 " + str(jwidth) + '\n')                     
+                        f.write("UPD_FULL_AREA " + str(image_wfm) + " 0 " + str(cm.wsize - jwidth - j) + " 1920 " + str(jwidth) + '\n')                     
             
             if style == 'clear':
                 while i < cm.wsize or j < cm.wsize:
@@ -301,14 +261,14 @@ class Display():
                         f.write("SLEEP " + str(delay) + "\n")
                         i += iwidth
                         i_iteration += 1
-                        clear_Detect += delay                   
+                        clear_detect += delay                   
                     if i == cm.wsize: # If white swipe commands have sent and waiting for upload to finish, waits the remaining time to start next image
-                        delay1 = delay*i_iteration - clear_Detect; delay2 = wfm_Time - clear_Detect
-                        clear_Detect += max(delay1, delay2)
-                        f.write("SLEEP " + str(clear_Detect) + "\n")  
-                        f.write("LD_IMG " + slideshow.path + slideshow.file[N] + "\n")
+                        delay1 = delay*i_iteration - clear_detect; delay2 = wfm_time - clear_detect
+                        clear_detect += max(delay1, delay2)
+                        f.write("SLEEP " + str(clear_detect) + "\n")  
+                        f.write("LD_IMG " + slideshow.cm_slideshow.path + slideshow.cm_slideshow.file[N] + "\n")
                         i+=1                       
-                    if clear_Detect >= (delay*i_iteration)-1 or clear_Detect >= wfm_Time-1: # Starts displaying the image when the white is finished
+                    if clear_detect >= (delay*i_iteration)-1 or clear_detect >= wfm_time-1: # Starts displaying the image when the white is finished
                         UPD_AREA_IMAGE(rot, direction)
                         f.write("SLEEP " + str(delay) + "\n")
                         j += jwidth
@@ -321,13 +281,13 @@ class Display():
                         f.write("SLEEP " + str(delay) + "\n")
                         i += iwidth
                         i_iteration += 1
-                        clear_Detect += delay                   
+                        clear_detect += delay                   
                     if i == cm.wsize: # If white swipe commands have sent and waiting for upload to finish, waits the remaining time to start next image
-                        delay1 = delay*i_iteration - clear_Detect; delay2 = wfm_Time - clear_Detect
-                        clear_Detect += max(delay1, delay2)
-                        f.write("SLEEP " + str(clear_Detect) + "\n")  
-                        f.write("LD_IMG " + slideshow.path + slideshow.file[N] + "\n")
-                        f.write("UPD_FULL " + str(slideshow.wfm[N]))
+                        delay1 = delay*i_iteration - clear_detect; delay2 = wfm_time - clear_detect
+                        clear_detect += max(delay1, delay2)
+                        f.write("SLEEP " + str(clear_detect) + "\n")  
+                        f.write("LD_IMG " + slideshow.cm_slideshow.path + slideshow.cm_slideshow.file[N] + "\n")
+                        f.write("UPD_FULL " + str(slideshow.cm_slideshow.wfm[N]))
                         i+=1 
             
             else:
@@ -346,23 +306,23 @@ class Display():
 
         rot = 1
         delay = 13
-        clear_Detect = 0
+        clear_detect = 0
         
         if   self.auto[N] == 'yes': # Auto flush defaults to normal clear wfm
-            wfm_Time = 518 +200
-            clear_WFM = self.wfm_disp['best']
+            wfm_time = 518 +200
+            clear_wfm = self.wfm_disp['best']
         if   self.flsh[N] == 'full': 
-            wfm_Time = 3541 +200
-            clear_WFM = self.wfm_disp['init']
+            wfm_time = 3541 +200
+            clear_wfm = self.wfm_disp['init']
         elif self.flsh[N] == 'fast': 
-            wfm_Time = 377 +200  
-            clear_WFM = self.wfm_disp['text']
+            wfm_time = 377 +200  
+            clear_wfm = self.wfm_disp['text']
         elif self.flsh[N] == 'strd': 
-            wfm_Time = 518 +200  
-            clear_WFM = self.wfm_disp['fast']
+            wfm_time = 518 +200  
+            clear_wfm = self.wfm_disp['fast']
         elif self.flsh[N] == 'best': 
-            wfm_Time = 1518 +200 
-            clear_WFM = self.wfm_disp['best']
+            wfm_time = 1518 +200 
+            clear_wfm = self.wfm_disp['best']
             
         if os.path.exists("swipe.txt"): # Checks if tiler_module.py exists, deletes if it does. Then writes the module file.
             os.remove("swipe.txt")
@@ -382,19 +342,19 @@ class Display():
                     iystart = int((cm.hsize - iheight)/2)
                     if iwidth > cm.wsize: iwidth = cm.wsize
                     if iheight > cm.hsize: iheight = cm.hsize
-                    f.write("UPD_PART_AREA " + str(clear_WFM) + " " + str(ixstart) + " " + str(iystart) + " " + str(iwidth) + " " + str(iheight) + '\n')
+                    f.write("UPD_PART_AREA " + str(clear_wfm) + " " + str(ixstart) + " " + str(iystart) + " " + str(iwidth) + " " + str(iheight) + '\n')
                     f.write("SLEEP " + str(delay) + "\n")
                     n += 1 
-                    clear_Detect += delay
+                    clear_detect += delay
                     
                 if iwidth == cm.wsize: # Once the clear is finished, move on with writing the remaining wait time
-                    delay1 = delay*n - clear_Detect; delay2 = wfm_Time - clear_Detect
-                    clear_Detect += max(delay1, delay2)
-                    f.write("SLEEP " + str(clear_Detect) + "\n")
-                    f.write("LD_IMG " + slideshow.path + slideshow.file[N] + "\n")
+                    delay1 = delay*n - clear_detect; delay2 = wfm_time - clear_detect
+                    clear_detect += max(delay1, delay2)
+                    f.write("SLEEP " + str(clear_detect) + "\n")
+                    f.write("LD_IMG " + slideshow.cm_slideshow.path + slideshow.cm_slideshow.file[N] + "\n")
                     iwidth += 1
                     
-                if clear_Detect >= wfm_Time-1: # Starts displaying the image when the white is finished
+                if clear_detect >= wfm_time-1: # Starts displaying the image when the white is finished
                     jwidth = int(math.ceil(cm.wsize/16)*(m+1))
                     jheight = int(math.ceil(cm.hsize/16)*(m+1))
                     jxstart = int((cm.wsize - jwidth)/2)
@@ -411,13 +371,11 @@ class Display():
     '''
     The main menu screen
     '''
-    def display_main_menu(self, area=['header', 'body', 'footer', 'banner']):
+    def display_main_menu(self, area = ['header', 'body', 'footer', 'banner']):
         self.load(self.directory + "tmp_mainmenu.pgm", 1)  
         #self.display_clock("load")
         # BUTTONS(main, 'no display')      
         self.load_area(cm.banner.file, (0,80), cm.banner.rot)
-
-        
         
         if os.path.exists("/mnt/mmc/api/tools/tmp.txt"): 
             os.remove("/mnt/mmc/api/tools/tmp.txt")
@@ -439,8 +397,6 @@ class Display():
                 f.write(" 0 " + str(int(math.floor(.04167*cm.hsize))) + " " + str(cm.wsize) + " " + str(int(math.floor(.11458*cm.hsize))) + "\n") # BANNER 
                 
         subprocess.call("/mnt/mmc/api/tools/cmder /mnt/mmc/api/tools/tmp.txt", shell=True)
-
-        self.display_brightness()
 
     '''
     Loads the given image.
@@ -467,7 +423,6 @@ class Display():
     def load_area(self, img, pos, rot=1):
         X = ' '; SSX = cm.hsize; SSY = cm.wsize
         if   str(rot) == '1':
-            print('SUCCESS')
             subprocess.call('bs_load_img_area ' + str(rot) +X+ str(pos[0]) +X+ str(pos[1]) +X+ str(img), shell = True)
         elif str(rot) == '0':
             subprocess.call('bs_load_img_area ' + str(rot) +X+ str(SSY - pos[1]) +X+ str(pos[0]) +X+ str(img), shell = True)
@@ -494,16 +449,16 @@ class Display():
     #     else: 
     #         utils.command('bs_disp_' + method + ' ' + str(wfm), 'sub')
             
-    def display(self, slideshow, wfm=2, method = 'full'):
+    def display(self, image, wfm=2, method = 'full'):
         
-        if isinstance(slideshow, cm.IMAGE):
-            if isinstance(slideshow.wfm, list):
-                wfm = slideshow.wfm[slideshow.cur_slide]
-            else:
-                wfm = slideshow.wfm  
+        if type(image) == int or type(image) == str:
+            pass
+        
+        elif isinstance(image, cm.IMAGE):
+            wfm = image.wfm
                 
-        elif type(slideshow) != int or str: # assume to be an instance of the Slideshow() class
-            wfm = slideshow.cm_slideshow.wfm[slideshow.cur_slide]
+        else: # Assume to be an instance of the Slideshow() class
+            wfm = image.cm_slideshow.wfm[image.cur_slide]
                 
         utils.command('bs_disp_' + method + ' ' + str(wfm), 'sub')   
 

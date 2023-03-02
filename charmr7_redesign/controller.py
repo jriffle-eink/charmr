@@ -35,14 +35,14 @@ class Controller:
         #self.startup = Startup()
                 
         # responsible for monitoring the brightness/temperature of the demo
-        self.bght_temp_menu = BrightnessTemperatureMenu(self.view) 
+        #self.bght_temp_menu = BrightnessTemperatureMenu(self.view) 
 
         # responsible for monitoring applications that can be launched from the main menu (currently, slideshows, sketch app, and main menu settings)
         self.main_menu = MainMenu(self.view) # Builds menu, saves as temporary image
 
         self.main_settings_menu = MainSettingsMenu(self.view)
         
-        self.slideshow = Slideshow(1)
+        self.slideshow = Slideshow(self.view, 1)
 
         # to be implemented
         self.wfm_transition_dict = {'dictionary of waveform transitions'} # should be loaded from a json file?
@@ -59,18 +59,25 @@ class Controller:
 
         self.touch_dict = basemenu.touch_dict
  
+    def run(self):
+        self.view.clear("text")
+        self.view.clear("init")
+        
+        self.run_main_menu()
+        
     '''
     Sets the current application to be the main menu and sends a command to display to load the appropriate screen.
     '''
     def run_main_menu(self):
         
-        if self.current_application == 'startup':
+        if self.current_application in ['startup', 'slideshow']:
             self.view.clear("best")
             self.main_menu.display()
             
         elif self.current_application == 'settings':
             self.view.clear("best", area=cm.area.menu)
             self.main_menu.display(area = ['body'])
+            
         
         self.menu = self.main_menu
                 
@@ -79,8 +86,8 @@ class Controller:
         self.buttons = self.main_menu.buttons
         
         self.command_dict = {'slider': None,
-                             'brightness_button': self.bght_temp_menu.select_brightness,
-                             'temperature_button': self.bght_temp_menu.select_temp,
+                             'brightness_button': None,
+                             'temperature_button': None,
                              'sketch_button': None,
                              'settings_button': self.run_settings,
                              0: self.run_slideshow,
@@ -97,7 +104,7 @@ class Controller:
     ('msettings') and displays the appropriate screen by sending a command to the display class. If the user is currently in the 'pause' application, changes the 
     current application to the pause settings ('psettings') and displays the appropriate screen.
     '''
-    def run_settings(self, user_input):
+    def run_settings(self):
 
         if self.current_application == 'main':
             
@@ -123,7 +130,60 @@ class Controller:
         
         self.wait_for_input()
         
-    def wait_for_input(self):
+    '''
+    Autoruns the slideshow. If no user input is recieved before the slide timeout, sends a command to the display to change the slide. Otherwise, processes the slideshow
+    input. If a 'QUIT' command is recieved from the slideshow input processing method, will terminate the slideshow autorun (essentially pausing the slideshow on the 
+    current slide)
+    '''
+    def run_slideshow(self):
+        
+        self.current_application = 'slideshow'
+        
+        while self.slideshow.cur_slide <  self.slideshow.length:
+            
+            self.slideshow.display_slide("next")            
+            user_input = utils.get_input(t=self.slideshow.slide_timer())
+
+            # if no input before slide times out, automatically transition to next slide
+            if user_input in [None, 'swipe left']:
+                if self.slideshow.cur_slide < self.slideshow.length-1:
+                    self.slideshow.change_slide("next")
+                else: break
+            
+            if user_input == 'swipe right':
+                if self.slideshow.cur_slide > 0:
+                    self.slideshow.change_slide("back")
+                else: 
+                    self.slideshow.change_slide("remain")
+            # else:
+            #     output = self.process_slideshow_input(self.slideshow, user_input)
+
+                # come up with something better. Right now, if user pauses process input will return QUIT signifying that autoplay of slideshow should end
+                # if output == 'QUIT':
+                #     return
+        self.run_main_menu()
+        
+    def run_pause(self):
+
+        if self.current_application == 'pause':
+            
+            self.main_settings_menu.display()
+            
+            #self.menu = self.pause_menu
+            
+            self.command_dict = {'slider': None,
+                                 'brightness_button': None,
+                                 'temperature_button': None,
+                                 'sketch_button': None,
+                                 'settings_button': self.run_settings
+                                 }
+            
+        else: pass
+    
+        
+        self.wait_for_input()
+        
+    def wait_for_input(self, timer = False):
     
         while True:
             
@@ -134,9 +194,8 @@ class Controller:
                 for key in self.command_dict:      
 
                     if type(key) == str and utils.touch_zone(user_input, self.touch_dict[key]):
-                        print('KEY: ', key)
                         
-                        self.command_dict[key](user_input)
+                        self.command_dict[key]()
 
 
             # these menu-specific options can be selected by buttons
@@ -226,24 +285,6 @@ class Controller:
         # self.main_menu.launch_sketch_app()
         # self.display.display_sketch_app()
 
-    '''
-    Autoruns the slideshow. If no user input is recieved before the slide timeout, sends a command to the display to change the slide. Otherwise, processes the slideshow
-    input. If a 'QUIT' command is recieved from the slideshow input processing method, will terminate the slideshow autorun (essentially pausing the slideshow on the 
-    current slide)
-    '''
-    def run_slideshow(self):
-        while self.slideshow.cur_slide <  self.slideshow.length:
-            user_input = utils.get_input(t=self.slideshow.slide_timer())
-
-            # no input before slide times out, automatically transition to next slide
-            if user_input == None:
-                self.slideshow.change_slide(self.slideshow, "next")
-            # else:
-            #     output = self.process_slideshow_input(self.slideshow, user_input)
-
-                # come up with something better. Right now, if user pauses process input will return QUIT signifying that autoplay of slideshow should end
-                # if output == 'QUIT':
-                #     return
 
     '''
     Processes any user input recieved while a slideshow is running.
@@ -284,4 +325,4 @@ if __name__ == '__main__':
 
     c = Controller()
 
-    c.run_main_menu()
+    c.run()
