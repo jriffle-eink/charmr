@@ -1,7 +1,6 @@
 
 from basemenu import BaseMenu
 import charmr_module as cm
-from view import Display
 import os
 import utils as utils
 import sys

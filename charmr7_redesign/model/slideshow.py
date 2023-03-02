@@ -2,9 +2,10 @@ import threading
 from pausesettingsmenu import PauseSettingsMenu
 import sys 
 sys.path.append('cmodule')
-
+sys.path.append('wfm_info')
+from view import Display 
 import charmr_module as cm
-
+import wfm_display_times # This should be a .json (if py3), otherwise a .py dictionary
 
 '''
 Responsible for monitoring the state of the slideshow
@@ -14,53 +15,69 @@ slideshow_num: int (which charmr module slideshow info should be used)
 '''
 class Slideshow():
 
-    def __init__(self, slideshow_num):
-
-        # the current slide of the slideshow
-        self.cur_slide = 0
-
+    def __init__(self, view, slideshow_num):
         """
         Changes the slideshow number to the number placed in argument.
         """    
+        self.change_slideshow(slideshow_num)
+        
+        # the current slide of the slideshow
+        self.cur_slide = 0
+        self.prev = 0
+        self.swipe = "left"
 
         '''
         The charmr module slideshow is stored here for easy access to the slideshow information (waveform, rotation values, etc.)
         '''
-        self.change_slideshow(slideshow_num)
+        self.wfm_display_times = wfm_display_times.data
+        
+        self.view = view
 
         # the length of the slideshow (number of slides)
         self.length = len(self.cm_slideshow.file)
 
         # to be implemented - pause management
         self.pause_menu = PauseSettingsMenu(self)
-
-        self.app_dict={
-
-        }
         
     def change_slideshow(self, slideshow_num):
         if slideshow_num == 1: self.cm_slideshow = cm.slideshow1
         if slideshow_num == 2: self.cm_slideshow = cm.slideshow2
         if slideshow_num == 3: self.cm_slideshow = cm.slideshow3
 
+    def change_slide(self, direction): #, style = None): # Moves to next slide of slideshow
 
+        if type(direction) == int: 
+            self.cur_slide = direction # direction can be 'back' or 'next', or an integer will change to that slide number   
+            return
+        elif direction == "next":
+            self.cur_slide += 1; self.prev = -1; self.swipe = 'left'
+            
+        elif direction == "back":
+            self.cur_slide -= 1; self.prev = 1; self.swipe = 'right'
+            if self.cur_slide < 0: self.cur_slide = 0 # If already on first slide, remain therels.touch_zone
+            
+        elif direction == "back two":
+            self.cur_slide -= 2; self.prev = 2; self.swipe = 'right'
+            if self.cur_slide < 0: self.cur_slide = 0 # If already on first slide, remain there
+        
+        print(self.cm_slideshow.path + self.cm_slideshow.file[self.cur_slide]); print("\n\n")
+        self.view.load(self.cm_slideshow.path + self.cm_slideshow.file[self.cur_slide])          
+    
+    def display_slide(self, direction, style=None):
+        
+        self.view.display_slide(self, direction, self.prev, self.swipe, style = None)
+    
     '''
     Calculates the necessary slide timeout based on the waveform of the current slide.
     
     RETURNS
     The slide timeout value (int)
     '''
-    def slide_timer(self): # This needs to be made into a json as well
-        time_Added = 0
+    def slide_timer(self): 
+        
+        time_added = self.wfm_display_times[self.cm_slideshow.wfm[self.cur_slide]]
 
-        if str(self.cm_slideshow.wfm[self.cur_slide]) == '2': time_Added = 1024
-        if str(self.cm_slideshow.wfm[self.cur_slide]) == '3': time_Added = 377
-        if str(self.cm_slideshow.wfm[self.cur_slide]) == '4': time_Added = 518
-        if str(self.cm_slideshow.wfm[self.cur_slide]) == '5': time_Added = 1518
-        if str(self.cm_slideshow.wfm[self.cur_slide]) == '6': time_Added = 377
-        if str(self.cm_slideshow.wfm[self.cur_slide]) == '7': time_Added = 729
-
-        return int(self.cm_slideshow.time[self.cur_slide]) + time_Added
+        return int(self.cm_slideshow.time[self.cur_slide]) + time_added
 
     def display_pause(self):
         self.view.display_pause(self)             

@@ -1,7 +1,6 @@
 from basemenu import BaseMenu
 #from mainsettingsmenu import MainSettingsMenu
 import charmr_module as cm
-from view import Display
 from model.slideshow import Slideshow
 import os
 import utils
@@ -31,10 +30,8 @@ class MainMenu(BaseMenu):
         
     def display(self, area = ['header', 'body', 'footer', 'banner']):
         
-        #self.view.display_main_menu(area) # loads and displays using cmder
+        self.view.display_main_menu(area) # loads and displays using cmder
         
-        self.view.display_main_menu()
-
         self.change_checkmark()
     
     def change_checkmark(self):    
