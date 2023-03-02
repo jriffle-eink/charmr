@@ -20,7 +20,7 @@ class BrightnessTemperatureMenu(BaseMenu):
         for i in range(10):
             self.locations = (476+(i*49), 1772)
 
-        super(BrightnessTemperatureMenu, self).__init__(locations, view, check_file, uncheck_file)#locations_list, check_file, uncheck_file)
+        super(BrightnessTemperatureMenu, self).__init__(view, locations, check_file, uncheck_file)#locations_list, check_file, uncheck_file)
 
         # The type of menu being worked with. If 'bght', the brightness of the demo nwill be modified by any given function. If 'temp', the
         # temperature will be modified.
@@ -137,14 +137,25 @@ class BrightnessTemperatureMenu(BaseMenu):
     RETURN
     void
     '''
-    def select_type(self, selected):
-        if selected == "bght":
-            self.cur_type = "bght"
-            self.view.display_brightness()
+    # def select_type(self, selected):
+    #     if selected == "bght":
+    #         self.cur_type = "bght"
+    #         self.view.display_brightness()
 
-        elif selected == "temp":
-            self.cur_type = "temp"
-            self.view.display_temp()
+    #     elif selected == "temp":
+    #         self.cur_type = "temp"
+    #         self.view.display_temp()
+
+    def select_brightness(self):
+        self.cur_type = "bght"
+        self.view.display_brightness()
+
+
+    def select_temp(self):
+        self.cur_type = "temp"
+        print("SELECTING")
+        self.view.display_temp()
+
 
     '''
     Sets the brightness of the demo
@@ -170,7 +181,8 @@ class BrightnessTemperatureMenu(BaseMenu):
         subprocess.call("AURORA_UPDATE=off aurora3 set_brt 2 " + str(brt_val), shell=True)
         subprocess.call("aurora3 set_brt 1 " + str(brt_val), shell=True)
         
-        self.view.change_checkmarked_option(self.locations, self.cur_check) 
+        self.view.change_checkmarked_option(self.locations, self.cur_check, check='/mnt/mmc/images/charmr/1440x1920/check_brightness2.pgm', uncheck='/mnt/mmc/images/charmr/1440x1920/uncheck_brightness2.pgm')
+        print('cur check: ', self.cur_check) 
 
     ''' 
     Sets the temperature of the demo
@@ -198,7 +210,7 @@ class BrightnessTemperatureMenu(BaseMenu):
         subprocess.call("AURORA_UPDATE=off aurora3 set_cur 3 " + str(temp1), shell=True)
         subprocess.call("aurora3 set_cur 4 " + str(temp2), shell=True)
         
-        self.view.change_checkmarked_option(self.locations, self.cur_check) 
+        self.view.change_checkmarked_option(self.locations, self.cur_check, check='/mnt/mmc/images/charmr/1440x1920/check_brightness2.pgm', uncheck='/mnt/mmc/images/charmr/1440x1920/uncheck_brightness2.pgm')
 
 # if __name__ == "__main__":
 

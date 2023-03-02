@@ -38,37 +38,19 @@ class MainSettingsMenu(SettingsMenu):
 
 
     def process_input(self, user_input):
-        if self.cur_check == 0:
-            if type(user_input) == str: # Button pressed
-                                
-                if user_input in ['up', 'down']:
-                    self.buttons(user_input) # change the buttons appropriately
-                    self.view.change_checkmarked_option(self.locations, self.cur_check) 
-                    
-                elif user_input == 'enter':
-                    #selection = self.cur_check
-                    self.view.display_msetting_submenu(self.cur_check)
-    
-            elif type(user_input) == list: # Screen touched           
-                self.cur_check = self.menu_touch(user_input)
+        if utils.touch_zone(user_input, self.general_touch_dict['exit']):
+            self.cur_check = 0
+            return 'main'
 
-                if self.cur_check == 4:
-                    self.restart()
+        elif utils.touch_zone(user_input, self.general_touch_dict['back']):
+            self.cur_check = 0
+            self.view.display_msettings()
 
-        else:
-            if utils.touch_zone(user_input, self.general_touch_dict['exit']):
-                self.cur_check = 0
-                return 'main'
+        elif self.cur_check == 4:
+            self.restart()
 
-            elif utils.touch_zone(user_input, self.general_touch_dict['back']):
-                self.cur_check = 0
-                self.view.display_msettings()
-
-            elif self.cur_check == 4:
-                self.restart()
-
-            else: 
-                return self.run_app(user_input)
+        else: 
+            return self.run_app(user_input)
 
             
  
