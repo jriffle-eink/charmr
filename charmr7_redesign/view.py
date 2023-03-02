@@ -42,7 +42,7 @@ class Display():
 
     def display_temp(self):
         self.load_area(self.directory + 'label_temperature.pgm', (616,1718))
-
+        
     '''
     Clears the current screen. Takes one of 5 arguments: 'slideshow', 'full', 'fast', 'strd', 'best', or 'none'
     'slideshow': Manages clearing before the current slide in the slideshow, based on user specifications and recommendations
@@ -82,14 +82,14 @@ class Display():
     menu: BaseMenu (the menu the user is currently working with)
     disp (optional): bool (whether or not the checkmark will be displayed)
     '''
-    def change_checkmarked_option(self, locations, cur_check, disp=True):
+    def change_checkmarked_option(self, locations, cur_check, check=cm.check.file, uncheck=cm.uncheck.file, disp=True):
 
         if type(locations[0]) == int:
 
             if cur_check == 1:
-                subprocess.call('bs_load_img_area ' + str(cm.check.rot) + " " + str(locations[0]) + " " + str(locations[1]) + " " + cm.check.file, shell = True)
+                subprocess.call('bs_load_img_area ' + str(cm.check.rot) + " " + str(locations[0]) + " " + str(locations[1]) + " " + check, shell = True)
             else:     
-                subprocess.call('bs_load_img_area ' + str(cm.uncheck.rot) + " " + str(locations[0]) + " " + str(locations[1]) + " " + cm.uncheck.file, shell = True)  
+                subprocess.call('bs_load_img_area ' + str(cm.uncheck.rot) + " " + str(locations[0]) + " " + str(locations[1]) + " " + uncheck, shell = True)  
 
             if disp: 
                 self.display(cm.check, 'part')
@@ -379,6 +379,8 @@ class Display():
         
         if os.path.exists("/mnt/mmc/api/tools/tmp.txt"): 
             os.remove("/mnt/mmc/api/tools/tmp.txt")
+
+        self.display_brightness()
             
         with open("/mnt/mmc/api/tools/tmp.txt", "w") as f: # Need cmder code to get all the main menu regions to display at once
             f.write("SET_ROT 90 \n")
@@ -411,6 +413,33 @@ class Display():
         #os.system('bs_load_img ' + str(rot) + ' ' + str(img))
         subprocess.call('bs_load_img ' + str(rot) + ' ' + str(img), shell = True, close_fds=True)
         print("called")
+
+    def display_area(self, img, pos1, pos2, cur_slide=0, rot=1): # pos1 is upper left coordinate tuple and pos2 is lower right coordinate tuple
+        if isinstance(img, cm.IMAGE):
+            if isinstance(img.wfm, list):
+                wfm = img.wfm[N]
+                rot = img.rot[N]
+            else: 
+                wfm = img.wfm  
+        else: wfm = img
+        
+        """
+        Displays the image loaded into the buffer.
+        WFM: The waveform number used in displaying (or object of IMAGE class from charmer module)
+        method = 'full' or 'part': 'full' updates the entire area while 'part' only updates pixels of different values
+        pos1, pos2: The area on the screen to be displayed. 
+            Measured as (x,y) from the top left of the screen, pos1 is the top left corner of the display area (x1,y1) 
+            and pos2 is the bottom right corner of the display area (x2,y2), making a rectangle of area (x2-x1) * (y2-y1)
+        """  
+        X = ' '; SSX = cm.hsize; SSY = cm.wsize
+        if   rot == 1:
+            utils.command('bs_disp_full_area ' + str(wfm) +X+ str(pos1[0]) +X+ str(pos1[1]) +X+ str(pos2[0]-pos1[0]) +X+ str(pos2[1]-pos1[1]), 'sub')
+        elif rot == 0: 
+            utils.command('bs_disp_full_area ' + str(wfm) +X+ str(SSY - pos1[1]) +X+ str(pos1[0]) +X+ str(pos2[1]-pos1[1]) +X+ str(pos2[0] - pos1[0]), 'sub') 
+        elif rot == 2:
+            utils.command('bs_disp_full_area ' + str(wfm) +X+ str(pos1[1]) +X+ str(SSX - pos1[0]) +X+ str(pos2[1]-pos1[1]) +X+ str(pos2[0] - pos1[0]) + ' block_rails_active', 'sub') 
+        elif rot == 3:
+            utils.command('bs_disp_full_area ' + str(wfm) +X+ str(SSX - pos1[0]) +X+ str(SSY - pos1[1]) +X+ str(pos2[0]-pos1[0]) +X+ str(pos2[1]-pos1[1]) + ' block_rails_active', 'sub')
 
     '''
     Loads only a specified area of the screen with the given image.

@@ -35,7 +35,7 @@ class Controller:
         #self.startup = Startup()
                 
         # responsible for monitoring the brightness/temperature of the demo
-        #self.bght_temp_menu = BrightnessTemperatureMenu(self.view) 
+        self.bght_temp_menu = BrightnessTemperatureMenu(self.view) 
 
         # responsible for monitoring applications that can be launched from the main menu (currently, slideshows, sketch app, and main menu settings)
         self.main_menu = MainMenu(self.view) # Builds menu, saves as temporary image
@@ -85,9 +85,9 @@ class Controller:
                 
         self.buttons = self.main_menu.buttons
         
-        self.command_dict = {'slider': None,
-                             'brightness_button': None,
-                             'temperature_button': None,
+        self.command_dict = {'slider': self.bght_temp_menu.brightness_temperature_slider,
+                             'brightness_button': self.bght_temp_menu.select_brightness,
+                             'temperature_button': self.bght_temp_menu.select_temp,
                              'sketch_button': None,
                              'settings_button': self.run_settings,
                              0: self.run_slideshow,
@@ -129,6 +129,7 @@ class Controller:
         self.current_application = 'settings'
         
         self.wait_for_input()
+        self.wait_for_settings_input()
         
     '''
     Autoruns the slideshow. If no user input is recieved before the slide timeout, sends a command to the display to change the slide. Otherwise, processes the slideshow
@@ -194,8 +195,10 @@ class Controller:
                 for key in self.command_dict:      
 
                     if type(key) == str and utils.touch_zone(user_input, self.touch_dict[key]):
+
+                        if key == 'slider': self.command_dict[key](user_input)
                         
-                        self.command_dict[key]()
+                        else: self.command_dict[key]()
 
 
             # these menu-specific options can be selected by buttons
@@ -210,6 +213,36 @@ class Controller:
                     
                     self.command_dict[self.menu.cur_check]() 
 
+    def wait_for_settings_input(self):
+
+            while True:
+
+                user_input = utils.get_input()
+
+                if type(user_input) == list: # screen touched, checks for common touch zones first
+                    output = self.main_settings_menu.process_input(user_input)
+
+                    if output != None:
+                        if output == 'pause':
+                            self.current_application = 'pause'
+                                # display pause
+                        elif output == 'main':
+                            self.current_application = 'main'
+                            self.main_menu.display()
+
+                        else: self.slideshow.process_settings_output(output)
+
+                    # # these menu-specific options can be selected by buttons
+                    # elif type(user_input) == str: # button press
+
+                    #     if user_input in ['up','down']:
+
+                    #         self.menu.buttons(user_input) # change the buttons appropriately
+                    #         self.menu.change_checkmark()
+
+                    #     elif user_input == 'enter': pass
+
+                    #         #super(MainMenu, self).cur_check  
 
     def send_psettings_input(self, user_input):
         output = self.slideshow.process_settings_input(user_input)
@@ -222,6 +255,11 @@ class Controller:
             self.current_application = 'main'
         elif slideshow_output == 'pause':
             self.current_application = 'pause'
+
+    def send_msettings_input(self, user_input):
+        output = self.main_settings_menu.process_input(user_input)
+
+        slideshow_output = self.slideshow.process_settings_output(output)
     
 
     '''
