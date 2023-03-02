@@ -2,13 +2,10 @@ import cmodule.charmr_module as cm
 import model.basemenu
 import os
 import sys
-import signal
 import time
 import math
 import subprocess
 import numpy as np
-import datetime
-import threading
 from PIL import Image, ImageDraw, ImageFont, ImageEnhance
 import utils
 
@@ -48,6 +45,7 @@ class Display():
         self.load_area(self.directory + 'label_brightness.pgm', (616,1718))
 
     def display_temp(self):
+        print('LOADING')
         self.load_area(self.directory + 'label_temperature.pgm', (616,1718))
 
     '''
@@ -56,25 +54,22 @@ class Display():
     The other arguments can be user designated in the program or read from the charmr_module
     Auto flash is set to 'norm' (standard display white flash)
     ''' 
-    def clear(self, flsh, disp = 'full'):
+    def clear(self, flsh, disp = 'full', area = None):
 
-        if  flsh == 'full': 
-            self.load(self.directory + 'white240.pgm'); 
-            subprocess.call("bs_disp_" + disp + " 0", shell = True)    
-        elif flsh == 'text': 
-            self.load(self.directory + 'white240.pgm'); 
-            subprocess.call("bs_disp_" + disp + " 3", shell = True)
-        elif flsh == 'fast':   
-            self.load(self.directory + 'white240.pgm'); 
-            subprocess.call("bs_disp_" + disp + " 4", shell = True)
-        elif flsh == 'strd': 
-            self.load(self.directory + 'white240.pgm'); 
-            subprocess.call("bs_disp_" + disp + " 2", shell = True)
-        elif flsh == 'best': 
-            self.load(self.directory + 'white240.pgm'); 
+        if flsh == 'none': return
+        
+        self.load(self.directory + 'white240.pgm'); 
+        
+        if flsh == 'full': wfm = " 0"
+        elif flsh == 'text': wfm = " 3"
+        elif flsh == 'fast': wfm = " 4" 
+        elif flsh == 'strd': wfm = " 2"
+        elif flsh == 'best': wfm = " 5"
+        
+        if area != None:
+            subprocess.call("bs_disp_full_area" + wfm +" "+ str(area[0][0]) +" "+ str(area[0][1]) +" "+ str(area[1][0]-area[0][0]) +" "+ str(area[1][1]-area[0][1]), shell=True)
+        else: 
             subprocess.call("bs_disp_" + disp + " 5", shell = True)
-        elif flsh == 'none': pass
-
 
     '''
     The screen displayed on launch. Currently, it is the startup image
@@ -106,7 +101,7 @@ class Display():
                 subprocess.call('bs_load_img_area ' + str(cm.uncheck.rot) + " " + str(locations[0]) + " " + str(locations[1]) + " " + cm.uncheck.file, shell = True)  
 
             if disp: 
-                self.display(img=cm.check, 'part')
+                self.display(cm.check, 'part')
  
             return
 
@@ -416,27 +411,36 @@ class Display():
     '''
     The main menu screen
     '''
-    def display_main_menu(self):
-        self.clear("text")
-
+    def display_main_menu(self, area=['header', 'body', 'footer', 'banner']):
         self.load(self.directory + "tmp_mainmenu.pgm", 1)  
         #self.display_clock("load")
         # BUTTONS(main, 'no display')      
         self.load_area(cm.banner.file, (0,80), cm.banner.rot)
+
         
-        # if os.path.exists("tmp.txt"): 
-        #     os.remove("tmp.txt")
-        with open("tmp.txt", "w") as f: # Need cmder code to get all the main menu regions to display at once
+        
+        if os.path.exists("/mnt/mmc/api/tools/tmp.txt"): 
+            os.remove("/mnt/mmc/api/tools/tmp.txt")
+            
+        with open("/mnt/mmc/api/tools/tmp.txt", "w") as f: # Need cmder code to get all the main menu regions to display at once
             f.write("SET_ROT 90 \n")
-            f.write("UPD_PART_AREA " + str(self.wfm_disp['text']))
-            f.write(" 0 " + str(int(math.floor(.00000*cm.hsize))) + " " + str(cm.wsize) + " " + str(int(math.floor(.04115*cm.hsize))) + "\n") # HEADER
-            f.write("UPD_PART_AREA " + str(self.wfm_disp['text']))
-            f.write(" 0 " + str(int(math.floor(.15625*cm.hsize))) + " " + str(cm.wsize) + " " + str(int(math.floor(.73750*cm.hsize))) + "\n") # BODY
-            f.write("UPD_PART_AREA " + str(self.wfm_disp['strd']))
-            f.write(" 0 " + str(int(math.floor(.89375*cm.hsize))) + " " + str(cm.wsize) + " " + str(int(math.floor(.10625*cm.hsize))) + "\n") # FOOTER
-            f.write("UPD_PART_AREA " + str(cm.banner.wfm))
-            f.write(" 0 " + str(int(math.floor(.04167*cm.hsize))) + " " + str(cm.wsize) + " " + str(int(math.floor(.11458*cm.hsize))) + "\n") # BANNER 
+            
+            if 'header' in area:
+                f.write("UPD_PART_AREA " + str(self.wfm_disp['text']))
+                f.write(" 0 " + str(int(math.floor(.00000*cm.hsize))) + " " + str(cm.wsize) + " " + str(int(math.floor(.04115*cm.hsize))) + "\n") # HEADER
+            if 'body' in area:
+                f.write("UPD_PART_AREA " + str(self.wfm_disp['text']))
+                f.write(" 0 " + str(int(math.floor(.15625*cm.hsize))) + " " + str(cm.wsize) + " " + str(int(math.floor(.73750*cm.hsize))) + "\n") # BODY
+            if 'footer' in area:
+                f.write("UPD_PART_AREA " + str(self.wfm_disp['strd']))
+                f.write(" 0 " + str(int(math.floor(.89375*cm.hsize))) + " " + str(cm.wsize) + " " + str(int(math.floor(.10625*cm.hsize))) + "\n") # FOOTER
+            if 'banner' in area:
+                f.write("UPD_PART_AREA " + str(cm.banner.wfm))
+                f.write(" 0 " + str(int(math.floor(.04167*cm.hsize))) + " " + str(cm.wsize) + " " + str(int(math.floor(.11458*cm.hsize))) + "\n") # BANNER 
+                
         subprocess.call("/mnt/mmc/api/tools/cmder /mnt/mmc/api/tools/tmp.txt", shell=True)
+
+        self.display_brightness()
 
     '''
     Loads the given image.
@@ -463,6 +467,7 @@ class Display():
     def load_area(self, img, pos, rot=1):
         X = ' '; SSX = cm.hsize; SSY = cm.wsize
         if   str(rot) == '1':
+            print('SUCCESS')
             subprocess.call('bs_load_img_area ' + str(rot) +X+ str(pos[0]) +X+ str(pos[1]) +X+ str(img), shell = True)
         elif str(rot) == '0':
             subprocess.call('bs_load_img_area ' + str(rot) +X+ str(SSY - pos[1]) +X+ str(pos[0]) +X+ str(img), shell = True)
@@ -478,17 +483,29 @@ class Display():
     img: IMAGE (the image being displayed from the charmr module file)
     method (optional): str (display type - cmder specification)
     '''
-    def display(self, img, wfm=2, method = 'full'):
-        # if isinstance(slideshow.cm_slideshow, cm.IMAGE):
-        #     if isinstance(slideshow.cm_slideshow.wfm, list):
-        #         wfm = slideshow.cm_slideshow.wfm[slideshow.cur_slide]
-        #     else:
-        #         wfm = slideshow.cm_slideshow.wfm   
-        #     utils.command('bs_disp_' + method + ' ' + str(wfm), 'sub')
-        # else: 
-        #     utils.command('bs_disp_' + method + ' ' + str(wfm), 'sub')
-
-        utils.command('bs_disp_' + method + ' ' + str(wfm), 'sub')
+        
+    # def display(self, slideshow, wfm=2, method = 'full'):
+    #     if isinstance(slideshow.cm_slideshow, cm.IMAGE):
+    #         if isinstance(slideshow.cm_slideshow.wfm, list):
+    #             wfm = slideshow.cm_slideshow.wfm[slideshow.cur_slide]
+    #         else:
+    #             wfm = slideshow.cm_slideshow.wfm   
+    #         utils.command('bs_disp_' + method + ' ' + str(wfm), 'sub')
+    #     else: 
+    #         utils.command('bs_disp_' + method + ' ' + str(wfm), 'sub')
+            
+    def display(self, slideshow, wfm=2, method = 'full'):
+        
+        if isinstance(slideshow, cm.IMAGE):
+            if isinstance(slideshow.wfm, list):
+                wfm = slideshow.wfm[slideshow.cur_slide]
+            else:
+                wfm = slideshow.wfm  
+                
+        elif type(slideshow) != int or str: # assume to be an instance of the Slideshow() class
+            wfm = slideshow.cm_slideshow.wfm[slideshow.cur_slide]
+                
+        utils.command('bs_disp_' + method + ' ' + str(wfm), 'sub')   
 
     '''
     Turns the text string into an image file, then saves the image file and returns the filepath
@@ -531,30 +548,24 @@ class Display():
             self.display(self.wfm_disp['text'], "part")
 
     def display_sketch_app(self):
-
-        self.clear('best')
-        os.system("FULL_WFM_MODE=2 PART_WFM_MODE=1 /mnt/mmc/api/tools/acepsketch /mnt/mmc/application/sketch/sketch_app.txt") 
-
-        self.display_main_menu()
+        #def F_sketch(arg = None):
+        """
+        Clicking the sketch button during a paused slideshow calls acepsketch
+        The draw function only works if the image is loaded as 'fast', highlighter as 'DU'
+        This means for color images, any non-fast rendered images must be color index converted using color_convert()
+        """
         
-    def display_pause_sketch_app(self, slideshow):  
-
-        if slideshow.cm_slideshow.wfm[N] == 3: # Only use highlighter on black and white text images
-            self.load("/mnt/mmc/images/charmr/1440x1920/highlighter.pgm")   
-            self.display(2, 'full')
-            self.load(slideshow.cm_slideshow)
-            self.display_area(6, (0,80), (1440,1715))
-            converted = PP1_22_40C(slideshow.cm_slideshow.path + slideshow.cm_slideshow.file[slideshow.cur_slide], 'text', 'pen') # color_convert.PP1_22_40C() for this GAL3 .wbf       
-            # highlight_sketch.txt calls Jaya's ACeP sketch program. The background image is loaded as tmp_converted
-            # This means that the color_convert function must be run regardless of the current wfm
-            os.system("FULL_WFM_MODE=2 PART_WFM_MODE=1 /mnt/mmc/api/tools/acepsketch /mnt/mmc/application/sketch/sketch_highlighter.txt")
-        else: # else use draw
-            self.load("/mnt/mmc/images/charmr/1440x1920/draw.pgm")   
-            self.display(2, 'full')
-            converted = PP1_22_40C(sslideshow.cm_slideshow.path + slideshow.cm_slideshow.file[slideshow.cur_slide], 'strd', 'fast') # color_convert.PP1_22_40C() for this GAL3 .wbf       
-            os.system("FULL_WFM_MODE=2 PART_WFM_MODE=1 /mnt/mmc/api/tools/acepsketch /mnt/mmc/application/sketch/sketch_draw.txt")  
-            
-        self.display_pause() # Go back to pause when finished
+        if arg == 'app':
+            self.clear('best')
+            os.system("FULL_WFM_MODE=2 PART_WFM_MODE=1 /mnt/mmc/api/tools/acepsketch /mnt/mmc/application/sketch/sketch_app.txt") 
+            # device.sect = None
+            # F_main()
+            return
+        
+    def display_pause_sketch_app(self, slideshow):
+        
+        self.load(slideshow) # Reload the slideshow slide #N
+        self.display_area(slideshow, (0,80), (1440,1715)) #Redisplay the background slideshow     
 
     
     def display_pause(self, slideshow):
@@ -618,29 +629,41 @@ class Display():
         # ----- LOADING CONTENT ------------
         self.load(self.directory + "tmp_mainsettingsmenu.pgm")  
         self.window_header('Main settings')
-        #self.change_checkmarked_option('mset')
+        self.change_checkmarked_option('mset')
         
-        # # ----- WAITING FOR INPUT ----------
-        # while True:  
-        #     basemenu.buttons(user_input)
-        #     user_input = get_input()
-        #     # ----- DISPLAYING BUTTONS AND OTHER CONTENT IF NOT YET LOADED
+        # ----- WAITING FOR INPUT ----------
+        while True:  
+            basemenu.buttons(user_input)
+            user_input = get_input()
+            # ----- DISPLAYING BUTTONS AND OTHER CONTENT IF NOT YET LOADED
 
-    def load_go_to_slide(self):
-        self.load(self.directory + 'menu_gotoslide.pgm')  
-        self.window_header('Go-to-slide menu')  
-        self.get_slide((849, 617))
         
-        img = Image.open(self.directory + "blank_gotoslide.pgm")
-        I1 = ImageDraw.Draw(img)
-        myFont = ImageFont.truetype(r"/mnt/mmc/images/charmr/TrueTypeFonts/Serif_DejaVu.ttf", 80)
-        I1.text((10, 10), slide, font=myFont, fill=0)
+            if touch:# Touch takes priority over button, so listed before 'if select:'   
+                command = MENU_TOUCH(mset) 
+                if   command == 1: command = F_gotoslide()
+                elif command == 2: command = F_wfm()
+                elif command == 3: COMMAND("kill python charmr.py; python charmr_demo.py", "sub")
+                elif command == 4: COMMAND("kill python charmr.py; python charmr.py", "sub")
+                
+                elif TOUCH_ZONE(TOUCH_DICT['slider']): # BRIGHTNESS/TEMP SLIDER
+                    if   device.slide == 'bght': F_brightness()
+                    elif device.slide == 'temp': F_temperature()
+                elif TOUCH_ZONE(TOUCH_DICT['brightness_button']): BUTTON_BRIGHTNESS('display')
+                elif TOUCH_ZONE(TOUCH_DICT['temperature_button']): BUTTON_TEMPERATURE('display')      
+                elif TOUCH_ZONE(TOUCH_DICT['settings_button']): F_main()
+                elif TOUCH_ZONE(TOUCH_DICT['exit_button']): F_main()
+                else: F_main()
+                
+            elif select:
+                if   mset.check == 0: command = F_gotoslide()
+                elif mset.check == 1: command = F_wfm()
+                elif mset.check == 2: COMMAND("kill python charmr.p7; python charmr_demo.py", "sub")
+                elif mset.check == 3: COMMAND("kill python charmr.py; python mcharmr.py", "sub") 
+                
+            else: command = None
             
-        img.save(directory + "tmp_gotoslide.pgm")
-        self.load_area(directory + 'tmp_gotoslide.pgm', (758, 743))  
-            
-        #s_Check = directory + "check_bar.pgm"; s_Uncheck = directory + "uncheck_bar.pgm"
-        #BUTTONS(menu.sshw, "display", s_Check, s_Uncheck)
+            if   command == 'exit': F_main()
+            elif command == 'back': F_msettings()
 
     def display_pausesettings(self):
         pass

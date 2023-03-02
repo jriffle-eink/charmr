@@ -18,6 +18,16 @@ uncheck_file: str (the uncheck style the  menu will use)
 
 class BaseMenu(object):
     
+    touch_dict={
+        'brightness_button': [[0,1716], [215,cm.hsize]],
+        'temperature_button': [[215,1716], [420,cm.hsize]],
+        'sketch_button': [[.6910*cm.wsize,.8854*cm.hsize], [.8507*cm.wsize,cm.hsize]],
+        'settings_button': [[.8507*cm.wsize,.8854*cm.hsize], [cm.wsize,cm.hsize]],
+        'exit_button': [[.7743*cm.wsize,.1781*cm.hsize], [.8590*cm.wsize,.2417*cm.hsize]],
+        'back_button': [[.6736*cm.wsize,.1771*cm.hsize], [.7708*cm.wsize,.2396*cm.hsize]],
+        'slider': [[460,1730], [990,1850]]
+        }
+    
     def __init__(self, view, locations, check_file, uncheck_file):
 
         self.locations = locations
@@ -31,16 +41,6 @@ class BaseMenu(object):
 
         # the user-specified uncheck file
         self.uncheck_file = uncheck_file
-        
-        self.touch_dict={
-            'brightness_button': [[0,1716], [215,cm.hsize]],
-            'temperature_button': [[215,1716], [420,cm.hsize]],
-            'sketch_button': [[.6910*cm.wsize,.8854*cm.hsize], [.8507*cm.wsize,cm.hsize]],
-            'settings_button': [[.8507*cm.wsize,.8854*cm.hsize], [cm.wsize,cm.hsize]],
-            'exit_button': [[.7743*cm.wsize,.1781*cm.hsize], [.8590*cm.wsize,.2417*cm.hsize]],
-            'back_button': [[.6736*cm.wsize,.1771*cm.hsize], [.7708*cm.wsize,.2396*cm.hsize]],
-            'slider': [[460,1730], [990,1850]]
-            }
 
     def change_checkmark(self):    
     
@@ -50,6 +50,7 @@ class BaseMenu(object):
         
         self.locations = locations
         self.check = check
+        
 
     '''
     NOTE this is unchanged from the original code - I don't really know how it works so I am going to circle back later and try to

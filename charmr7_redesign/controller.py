@@ -12,8 +12,8 @@ from PIL import Image, ImageDraw, ImageFont, ImageEnhance
 import utils as utils
 from model.brightnesstemperaturemenu import BrightnessTemperatureMenu
 import model.basemenu
+from model.basemenu import BaseMenu as basemenu
 from view import Display
-from model.startup import Startup
 from model.mainmenu import MainMenu
 from model.mainsettingsmenu import MainSettingsMenu
 from model.slideshow import Slideshow
@@ -42,7 +42,7 @@ class Controller:
 
         self.main_settings_menu = MainSettingsMenu(self.view)
         
-        self.slideshow = None
+        self.slideshow = Slideshow(1)
 
         # to be implemented
         self.wfm_transition_dict = {'dictionary of waveform transitions'} # should be loaded from a json file?
@@ -50,30 +50,15 @@ class Controller:
         # to be implemented - easier way to send user input to the appropriate input processing method
         # ideally - self.components[self.current_application](user_input) -> to process user input - no need for a big if/else
         # statement to figure out which method to send input to
-        self.components={'main': self.send_menu_input,
-                         'mainsettings': self.send_msettings_input, 
-                         # 'slideshow': self.send_slideshow_input,
-                         # #'pause': self.send_pause_input,
-                         # 'pausesettings': self.send_psettings_input
-                         }
+        # self.components={'main': self.send_menu_input,
+        #                  'mainsettings': self.send_msettings_input, 
+        #                  # 'slideshow': self.send_slideshow_input,
+        #                  # #'pause': self.send_pause_input,
+        #                  # 'pausesettings': self.send_psettings_input
+        #                  }
 
-        self.touch_dict={
-            'brightness_button': [[0,1716], [215,cm.hsize]],
-            'temperature_button': [[215,1716], [420,cm.hsize]],
-            'sketch_button': [[.6910*cm.wsize,.8854*cm.hsize], [.8507*cm.wsize,cm.hsize]],
-            'settings_button': [[.8507*cm.wsize,.8854*cm.hsize], [cm.wsize,cm.hsize]],
-            'exit_button': [[.7743*cm.wsize,.1781*cm.hsize], [.8590*cm.wsize,.2417*cm.hsize]],
-            'back_button': [[.6736*cm.wsize,.1771*cm.hsize], [.7708*cm.wsize,.2396*cm.hsize]],
-            'slider': [[460,1730], [990,1850]]
-            }
-
-    '''
-    Waits for user input. When input is recieved, sends input to correct processing function based on what the current application is.
-    ''' 
-    def run(self):  
-                        
-        self.run_main_menu()
-
+        self.touch_dict = basemenu.touch_dict
+ 
     '''
     Sets the current application to be the main menu and sends a command to display to load the appropriate screen.
     '''
@@ -81,26 +66,29 @@ class Controller:
         
         if self.current_application == 'startup':
             self.view.clear("best")
-        
-        self.main_menu.display()
+            self.main_menu.display()
+            
+        elif self.current_application == 'settings':
+            self.view.clear("best", area=cm.area.menu)
+            self.main_menu.display(area = ['body'])
         
         self.menu = self.main_menu
-        
+                
         self.current_application = 'main'
+                
+        self.buttons = self.main_menu.buttons
         
         self.command_dict = {'slider': None,
-                             'brightness_button': None,
-                             'temperature_button': None,
+                             'brightness_button': self.bght_temp_menu.select_brightness,
+                             'temperature_button': self.bght_temp_menu.select_temp,
                              'sketch_button': None,
                              'settings_button': self.run_settings,
-                             0: None,
+                             0: self.run_slideshow,
                              1: None,
                              2: None,
                              3: None,
                              4: None
                              }
-        
-        self.buttons = self.main_menu.buttons
         
         self.wait_for_input()
         
@@ -109,43 +97,18 @@ class Controller:
     ('msettings') and displays the appropriate screen by sending a command to the display class. If the user is currently in the 'pause' application, changes the 
     current application to the pause settings ('psettings') and displays the appropriate screen.
     '''
-    def run_settings(self):
+    def run_settings(self, user_input):
 
         if self.current_application == 'main':
             
             self.main_settings_menu.display()
             
             self.menu = self.main_settings_menu
-
-            self.current_application = 'mainsettings'
             
             self.command_dict = {'slider': None,
                                  'brightness_button': None,
                                  'temperature_button': None,
                                  'sketch_button': None,
-                                 'settings_button': self.run_main_menu,
-                                 0: self.main_settings_menu.display_go_to_slide,
-                                 1: self.main_settings_menu.display_wfm,
-                                 2: self.main_settings_menu.display_demo_mode,
-                                 3: None, # restart
-                                 4: None
-                                 }
-            
-        elif self.current_application == 'pause':
-
-            #self.main_settings_menu.display()
-            
-            #self.menu = self.pause_settings_menu
-
-            self.current_application = 'pausesettings'
-            
-            self.command_dict = {'slider': None,
-                                 'brightness_button': None,
-                                 'temperature_button': None,
-                                 'sketch_button': None,        
-                                    #since demo was in a menu when the sketch button was pressed, remove the menu by reloading  and displaying the slide
-                                    #self.view.load(self.slideshow) # Reload the slideshow slide #N
-                                    #self.view.display_area(self.slideshow, (0,80), (1440,1715)) #Redisplay the background slideshow   ,
                                  'settings_button': self.run_main_menu,
                                  0: None,
                                  1: None,
@@ -153,45 +116,13 @@ class Controller:
                                  3: None,
                                  4: None
                                  }
+            
+        else: pass
     
         self.current_application = 'settings'
         
-        #self.wait_for_input()
-
-        # because settings submenus are not traditional menus
-        self.wait_for_settings_input()
+        self.wait_for_input()
         
-    def wait_for_settings_input(self):
-    
-        while True:
-            
-            user_input = utils.get_input()
-
-            if type(user_input) == list: # screen touched, checks for common touch zones first
-                output = self.main_settings_menu.process_input(user_input)
-
-                if output != None:
-                    if output == 'pause':
-                        self.current_application = 'pause'
-                        # display pause
-                    elif output == 'main'
-                    self.current_application = 'main'
-                    self.main_menu.display()
-
-                    else: self.slideshow.process_input()
-                
-            # # these menu-specific options can be selected by buttons
-            # elif type(user_input) == str: # button press
-                                
-            #     if user_input in ['up','down']:
-                    
-            #         self.menu.buttons(user_input) # change the buttons appropriately
-            #         self.menu.change_checkmark()
-                    
-            #     elif user_input == 'enter': pass
-                    
-            #         #super(MainMenu, self).cur_check  
-
     def wait_for_input(self):
     
         while True:
@@ -203,8 +134,9 @@ class Controller:
                 for key in self.command_dict:      
 
                     if type(key) == str and utils.touch_zone(user_input, self.touch_dict[key]):
+                        print('KEY: ', key)
                         
-                        self.command_dict[key]()
+                        self.command_dict[key](user_input)
 
 
             # these menu-specific options can be selected by buttons
@@ -215,38 +147,22 @@ class Controller:
                     self.menu.buttons(user_input) # change the buttons appropriately
                     self.menu.change_checkmark()
                     
-                elif user_input == 'enter': pass
+                elif user_input == 'enter':
                     
-                    #super(MainMenu, self).cur_check     
+                    self.command_dict[self.menu.cur_check]() 
 
 
-    # def send_msettings_input(self, user_input):
-    #     output = self.main_settings_menu.process_input(user_input)
-
-    #     slideshow_output = self.slideshow.process_settings_output(output)
-
-    #     # need to update current application
-
-    #     if slideshow_output == 'main':
-    #         self.current_application = 'main'
-    #         self.main_menu.display()
-    #     elif slideshow_output == 'pause':
-    #         self.current_application = 'pause'
-    #         self.slideshow.display_pause()
-
-    # def send_psettings_input(self, user_input):
-    #     output = self.slideshow.process_settings_input(user_input)
+    def send_psettings_input(self, user_input):
+        output = self.slideshow.process_settings_input(user_input)
         
-    #     slideshow_output = self.slideshow.process_settings_output(output)
+        slideshow_output = self.slideshow.process_settings_output(output)
 
-    #     # need to update current application
+        # need to update current application
 
-    #     if slideshow_output == 'main':
-    #         self.current_application = 'main'
-    #         self.main_menu.display()
-    #     elif slideshow_output == 'pause':
-    #         self.current_application = 'pause'
-    #         self.slideshow.display_pause()
+        if slideshow_output == 'main':
+            self.current_application = 'main'
+        elif slideshow_output == 'pause':
+            self.current_application = 'pause'
     
 
     '''
@@ -322,12 +238,12 @@ class Controller:
             # no input before slide times out, automatically transition to next slide
             if user_input == None:
                 self.slideshow.change_slide(self.slideshow, "next")
-            else:
-                output = self.process_slideshow_input(self.slideshow, user_input)
+            # else:
+            #     output = self.process_slideshow_input(self.slideshow, user_input)
 
                 # come up with something better. Right now, if user pauses process input will return QUIT signifying that autoplay of slideshow should end
-                if output == 'QUIT':
-                    return
+                # if output == 'QUIT':
+                #     return
 
     '''
     Processes any user input recieved while a slideshow is running.
@@ -368,4 +284,4 @@ if __name__ == '__main__':
 
     c = Controller()
 
-    c.run()
+    c.run_main_menu()

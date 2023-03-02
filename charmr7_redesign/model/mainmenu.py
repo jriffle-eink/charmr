@@ -1,5 +1,5 @@
 from basemenu import BaseMenu
-from mainsettingsmenu import MainSettingsMenu
+#from mainsettingsmenu import MainSettingsMenu
 import charmr_module as cm
 from view import Display
 from model.slideshow import Slideshow
@@ -10,13 +10,13 @@ import utils
 Responsible for monitoring the state of the main menu/launching any main-menu related applications (main menu settings, slideshows, or sketch)
 '''
 class MainMenu(BaseMenu):
-    
+       
     def __init__(self, view, check_file=cm.check.file, uncheck_file=cm.uncheck.file):
+
+        self.tmp_name = 'mainmenu'
 
         self.check_file = check_file
         self.uncheck_file = uncheck_file
-        
-        self.tmp_name = 'mainmenu'
 
         # build the menu locations
         self.locations = self.menu_build("main", self.tmp_name)
@@ -29,10 +29,12 @@ class MainMenu(BaseMenu):
         # the class responsible for monitoring main menu settings
         # self.main_settings_menu = MainSettingsMenu(self.view)
         
-    def display(self):
-                
-        self.view.display_main_menu(self.tmp_name) # loads and displays using cmder
+    def display(self, area = ['header', 'body', 'footer', 'banner']):
         
+        #self.view.display_main_menu(area) # loads and displays using cmder
+        
+        self.view.display_main_menu()
+
         self.change_checkmark()
     
     def change_checkmark(self):    
